@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>token-fire 设置</title>
+  <link rel="stylesheet" href="base.css">
+  <link rel="stylesheet" href="panel.css">
+</head>
+<body>
+  <section id="panel" aria-label="设置">
+    <header id="panel-head">
+      <h1>token-fire</h1>
+      <button id="collapse" title="收起设置">×</button>
+    </header>
+
+    <div id="preview">
+      <div id="preview-glow"></div>
+      <svg id="preview-scene" shape-rendering="crispEdges" aria-hidden="true">
+        <g id="preview-static"></g>
+        <g class="frame" data-frame="0"></g>
+        <g class="frame" data-frame="1"></g>
+        <g class="frame" data-frame="2"></g>
+        <g class="frame" data-frame="3"></g>
+        <g id="preview-sparks" class="sparks"></g>
+      </svg>
+      <div id="preview-rate"><b id="rate">0</b><span id="unit">tok/s</span></div>
+    </div>
+
+    <div class="group">
+      <h2>火势口径</h2>
+      <div id="metrics" class="options row"></div>
+      <p id="metric-hint" class="hint"></p>
+    </div>
+
+    <div class="group">
+      <h2>摆件大小</h2>
+      <div id="sizes" class="options row"></div>
+    </div>
+
+    <div class="group">
+      <h2>启动</h2>
+      <label class="switch">
+        <input type="checkbox" id="autostart">
+        <span class="track"><span class="knob"></span></span>
+        <span class="label">开机自启</span>
+      </label>
+    </div>
+
+    <div class="group">
+      <h2>数据源</h2>
+      <p id="env" class="hint">检测中…</p>
+      <p id="status" class="hint">连接中…</p>
+    </div>
+
+    <footer>
+      <button id="quit" class="danger">退出摆件</button>
+    </footer>
+  </section>
+  <script type="module" src="panel.js"></script>
+</body>
+</html>

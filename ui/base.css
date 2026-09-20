@@ -1,0 +1,37 @@
+/* 摆件和设置面板共用的底子：整页透明，只有画面本身可见 */
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: transparent;
+  color: #e8e8f0;
+  font: 13px/1.5 "Microsoft YaHei", "Segoe UI", system-ui, sans-serif;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* 火焰帧循环：每帧亮 1/4 时间，靠负延迟错开 */
+:root { --frame-dur: 0.2857s; }
+
+.frame { animation: flicker var(--frame-dur) linear infinite; }
+.frame[data-frame="0"] { animation-delay: calc(var(--frame-dur) * 0); }
+.frame[data-frame="1"] { animation-delay: calc(var(--frame-dur) * -0.25); }
+.frame[data-frame="2"] { animation-delay: calc(var(--frame-dur) * -0.5); }
+.frame[data-frame="3"] { animation-delay: calc(var(--frame-dur) * -0.75); }
+
+@keyframes flicker {
+  0%, 24.99% { opacity: 1; }
+  25%, 100% { opacity: 0; }
+}
+
+/* 火势低时把多余的火星藏掉（SMIL 动画会盖掉 CSS opacity，只能用 display） */
+.sparks > g.off { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .frame { animation: none; }
+  .frame[data-frame="1"], .frame[data-frame="2"], .frame[data-frame="3"] { display: none; }
+}

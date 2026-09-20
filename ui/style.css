@@ -1,0 +1,84 @@
+/* 摆件窗口：只有一堆篝火 */
+#ornament {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+}
+
+#ornament:active { cursor: grabbing; }
+
+#scene {
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: visible;
+}
+
+/* 火堆背后那层暖光，火越旺越亮 */
+#glow {
+  position: absolute;
+  left: 50%;
+  bottom: 4%;
+  width: 80%;
+  aspect-ratio: 1;
+  transform: translate(-50%, 16%);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 152, 44, 0.36) 0%, rgba(255, 92, 20, 0.13) 45%, transparent 72%);
+  filter: blur(7px);
+  opacity: var(--glow, 0);
+  transition: opacity 260ms linear;
+  pointer-events: none;
+}
+
+/* 实时读数：常驻但压得很淡，鼠标放上去才看清 */
+#readout {
+  position: absolute;
+  left: 50%;
+  bottom: 1px;
+  transform: translateX(-50%);
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(10, 10, 15, 0.55);
+  color: rgba(255, 200, 106, 0.62);
+  font-variant-numeric: tabular-nums;
+  font-size: 11px;
+  white-space: nowrap;
+  transition: color 160ms ease, background 160ms ease, opacity 160ms ease;
+  pointer-events: none;
+}
+
+#ornament:hover #readout {
+  color: #ffc86a;
+  background: rgba(10, 10, 15, 0.85);
+}
+
+#readout b { font-weight: 600; }
+#readout span { margin-left: 3px; color: rgba(154, 143, 125, 0.85); font-size: 10px; }
+
+/* 数据源出问题时顶上读数，点一下看详情 */
+#alert {
+  position: absolute;
+  left: 50%;
+  bottom: 1px;
+  transform: translateX(-50%);
+  max-width: 96%;
+  padding: 2px 9px;
+  border: 1px solid rgba(255, 120, 100, 0.4);
+  border-radius: 999px;
+  background: rgba(38, 12, 10, 0.9);
+  color: #ff9d8d;
+  font-size: 10px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+#alert[hidden] { display: none; }
+#alert.warn { border-color: rgba(255, 196, 90, 0.4); background: rgba(40, 30, 8, 0.9); color: #ffcf7a; }
+
+#alert:not([hidden]) ~ #readout { display: none; }

@@ -1,0 +1,219 @@
+/* 设置面板：自己一个窗口，跟篝火互不干扰 */
+body { padding: 10px; }
+
+#panel {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  width: 100%;
+  height: 100%;
+  padding: 13px 14px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(24, 22, 30, 0.97) 0%, rgba(16, 15, 21, 0.98) 100%);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.5);
+}
+
+#panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 9px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  cursor: grab;
+}
+
+#panel-head:active { cursor: grabbing; }
+
+#panel-head h1 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+}
+
+#collapse {
+  width: 22px;
+  height: 22px;
+  border: 0;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #a9a9b8;
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+#collapse:hover { background: rgba(255, 255, 255, 0.12); color: #fff; }
+
+/* 火势预览：换口径时能立刻看出火苗不一样了 */
+#preview {
+  position: relative;
+  flex: 0 0 auto;
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 11px;
+  background: radial-gradient(circle at 50% 78%, rgba(255, 140, 30, 0.1) 0%, transparent 62%), rgba(255, 255, 255, 0.03);
+  overflow: hidden;
+}
+
+#preview-scene {
+  height: 100%;
+  width: auto;
+  overflow: visible;
+  pointer-events: none;
+}
+
+#preview-glow {
+  position: absolute;
+  left: 50%;
+  bottom: 2%;
+  width: 62%;
+  aspect-ratio: 1;
+  transform: translate(-50%, 16%);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 152, 44, 0.4) 0%, rgba(255, 92, 20, 0.14) 45%, transparent 72%);
+  filter: blur(7px);
+  opacity: var(--glow, 0);
+  transition: opacity 260ms linear;
+  pointer-events: none;
+}
+
+#preview-rate {
+  position: absolute;
+  right: 9px;
+  bottom: 6px;
+  color: rgba(255, 200, 106, 0.85);
+  font-variant-numeric: tabular-nums;
+  font-size: 11px;
+}
+
+#preview-rate span { margin-left: 3px; color: rgba(154, 143, 125, 0.85); font-size: 10px; }
+
+.group { display: flex; flex-direction: column; gap: 5px; }
+
+.group h2 {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: #7b7b8c;
+  letter-spacing: 0.6px;
+}
+
+.options { display: flex; flex-direction: column; gap: 5px; }
+.options.row { flex-direction: row; }
+.options.row > button { flex: 1; }
+
+.options button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.03);
+  color: #d3d3de;
+  font: inherit;
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 120ms ease, background 120ms ease;
+}
+
+.options.row > button { justify-content: center; padding: 7px 4px; }
+.options button:hover { background: rgba(255, 255, 255, 0.07); }
+
+.options button.on {
+  border-color: rgba(255, 168, 56, 0.7);
+  background: rgba(255, 140, 30, 0.14);
+  color: #ffd79a;
+}
+
+/* 选中标记：一个小圆点 */
+.options button::before {
+  content: "";
+  flex: 0 0 auto;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.options button.on::before { background: #ffa838; box-shadow: 0 0 6px rgba(255, 168, 56, 0.8); }
+.options.row > button::before { display: none; }
+
+.hint {
+  margin: 0;
+  color: #6e6e7d;
+  font-size: 11px;
+  min-height: 15px;
+}
+
+.hint.bad { color: #ff8a7a; }
+.hint.warn { color: #ffcf7a; }
+.hint.ok { color: #7fc98a; }
+
+/* 开关 */
+.switch {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.switch input { position: absolute; opacity: 0; pointer-events: none; }
+
+.switch .track {
+  position: relative;
+  width: 34px;
+  height: 19px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  transition: background 140ms ease;
+}
+
+.switch .knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: #9a9aab;
+  transition: transform 140ms ease, background 140ms ease;
+}
+
+.switch input:checked + .track { background: rgba(255, 140, 30, 0.45); }
+.switch input:checked + .track .knob { transform: translateX(15px); background: #ffc061; }
+
+footer { margin-top: auto; padding-top: 8px; }
+
+#quit {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid rgba(255, 120, 100, 0.28);
+  border-radius: 9px;
+  background: rgba(255, 90, 70, 0.1);
+  color: #ff9d8d;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+#quit:hover { background: rgba(255, 90, 70, 0.2); }
+
+/* 数据源那块要放的文字比较长，单独给个能换行的盒子 */
+#status {
+  margin: 0;
+  color: #6e6e7d;
+  font-size: 11px;
+  line-height: 1.45;
+  word-break: break-all;
+}
+
+#status.bad { color: #ff8a7a; }
+#status.warn { color: #ffcf7a; }
+#status.ok { color: #7fc98a; }

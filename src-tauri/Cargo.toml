@@ -1,0 +1,27 @@
+[package]
+name = "token-fire"
+version = "0.1.0"
+description = "像素篝火桌面摆件：火势跟着 ccswitch 的 token 消耗速度走"
+edition = "2021"
+rust-version = "1.77"
+
+[lib]
+name = "token_fire_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2.5.6", features = [] }
+
+[dependencies]
+tauri = { version = "2.10.3", features = [] }
+tauri-plugin-autostart = "2.5.1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+rusqlite = { version = "0.40", features = ["bundled"] }
+dirs = "6"
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+strip = true
