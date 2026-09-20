@@ -2,7 +2,7 @@
 import { FireView } from "./fire-view.js";
 import { METRICS, PICKABLE_METRICS, DEFAULT_METRIC, LIVE_METRIC, rateOf } from "./ccswitch/rates.js";
 
-const POLL_MS = 620;
+const POLL_MS = 250;
 const ENV_RETRY_MS = 20000;
 
 const invoke = window.__TAURI__?.core?.invoke ?? null;
@@ -178,7 +178,8 @@ function describe(sample) {
   }
   const idle = sample.idle_seconds;
   if (idle === null || idle === undefined) parts.push("还没收到数据");
-  else if (idle > 4) parts.push(Math.round(idle) + " 秒前还在生成");
+  else if (rateOf(sample) <= 0) parts.push("已熄灭（" + Math.round(idle) + " 秒前有过生成）");
+  else if (idle > 4) parts.push("刚停下来，" + Math.round(idle) + " 秒前还在生成");
   else if (!live || sample.threads === 0) parts.push("正在烧");
   return parts.join(" · ");
 }

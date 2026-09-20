@@ -2,7 +2,7 @@
 import { FireView } from "./fire-view.js";
 import { METRICS, DEFAULT_METRIC, rateOf } from "./ccswitch/rates.js";
 
-const POLL_MS = 620;
+const POLL_MS = 250;
 const ENV_RETRY_MS = 15000; // 数据源还没就绪时勤快点回头看看，正常了就不用再查
 
 const invoke = window.__TAURI__?.core?.invoke ?? null;

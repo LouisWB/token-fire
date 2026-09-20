@@ -8,7 +8,7 @@ const FRAME_FPS = 14;
 const QUANT = 30;        // 火势量化成多少档
 const STATIC_QUANT = 8;  // 炭火变化很慢，单独粗量化，省点重绘
 const RENDER_MIN_MS = 55;
-const GLIDE_MS = 240;    // 火势趋近的时间常数
+const GLIDE_MS = 170;    // 火势趋近的时间常数
 
 export class FireView {
   constructor({ scene, staticLayer, sparks, rateEl, unitEl, glowEl, seed = 7 }) {

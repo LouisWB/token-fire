@@ -1,5 +1,6 @@
 node_modules/
 .qa/
 dist/
+*.zip
 *.log
 src-tauri/target/

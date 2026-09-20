@@ -22,10 +22,16 @@ use crate::usage::Rates;
 pub const RING_SECONDS: i64 = 90;
 /// 算瞬时速率时回看多少秒
 const WINDOW_SECONDS: i64 = 25;
-/// 指数加权的时间常数：越大越稳，越小越灵敏
-pub const TAU_SIGNAL: f64 = 3.5;
-/// 会话多久没动静就不算"正在烧"
-const THREAD_IDLE_SECONDS: i64 = 45;
+/// 指数加权的时间常数：越大越稳，越小越灵敏。锚到最后一条事件上之后，可以调得比批写周期小得多
+pub const TAU_SIGNAL: f64 = 1.4;
+/// 多久没看见新事件就直接当成"熄了"，不再慢慢衰减。
+///
+/// 实测 Codex 的日志是每 ~3 秒批写一次，阈值取 5 秒：够盖住一个批写周期，
+/// 又不至于让火在对话结束后还亮着。光靠指数窗口会亮二十多秒，
+/// 看着就像"会话都结束了还在烧 token"。所以到点直接归零。
+const IDLE_CUTOFF_SECONDS: i64 = 5;
+/// 用量库那条路是事后统计，衰减本来就慢，给它宽松一点
+const CC_IDLE_CUTOFF_SECONDS: i64 = 30;
 
 pub fn now_seconds() -> i64 {
     SystemTime::now()
@@ -147,11 +153,12 @@ impl Live {
         *slot = (*slot).max(at);
     }
 
-    /// 最近还在动的会话数 —— "所有对话一起烧"就是靠这个数体现的
+    /// 最近还在动的会话数 —— "所有对话一起烧"就是靠这个数体现的。
+    /// 用同一个熄火阈值，免得火都灭了还写着"2 个会话在烧"
     pub fn active_threads(&self, now: i64) -> u32 {
         self.threads
             .values()
-            .filter(|at| now - **at <= THREAD_IDLE_SECONDS)
+            .filter(|at| now - **at <= IDLE_CUTOFF_SECONDS)
             .count() as u32
     }
 
@@ -474,8 +481,14 @@ impl Engine {
 
     fn cc_sample(&self, metric: &str) -> Sample {
         let raw = usage::sample(&self.cc_db, usage::TAU_SECONDS);
+        // 太久没请求了就把残留的尾巴清零，别让读数一直挂着个小数
+        let stale = raw
+            .idle_seconds
+            .map(|idle| idle > CC_IDLE_CUTOFF_SECONDS as f64)
+            .unwrap_or(false);
+        let rates = if stale { Rates::default() } else { raw.rates };
         Sample {
-            rates: raw.rates,
+            rates,
             metric: metric.to_string(),
             source: "ccswitch".to_string(),
             source_name: names::of("ccswitch").1.to_string(),
@@ -505,8 +518,26 @@ impl Engine {
                 "claude" => &self.claude.live,
                 _ => &self.gemini.live,
             };
-            let events = live.events.rate(now, TAU_SIGNAL);
-            let tokens = live.tokens.rate(now, TAU_SIGNAL);
+            if let Some(last) = live.events.last() {
+                newest = Some(newest.map_or(last, |prev| prev.max(last)));
+            }
+            labels.push(names::of(id).1);
+        }
+
+        // 锚在"最后一条事件的时刻"上算速率，而不是墙上时钟。
+        // 日志是三秒一批写出来的，按墙上时钟算会让读数在两批之间一路往下掉、
+        // 下一批再猛地跳回来，看着又抖又慢；锚住之后读到多少就是多少。
+        // +1 是为了让那一秒本身参与计算（rate() 会跳过"当前这一秒"）。
+        let at = newest.map(|last| last + 1).unwrap_or(now);
+
+        for id in ids {
+            let live = match *id {
+                "codex" => &self.codex.live,
+                "claude" => &self.claude.live,
+                _ => &self.gemini.live,
+            };
+            let events = live.events.rate(at, TAU_SIGNAL);
+            let tokens = live.tokens.rate(at, TAU_SIGNAL);
             events_per_sec += events;
             if tokens > 0.0 {
                 // 源自带真实 token 数，直接用，不用估
@@ -516,11 +547,13 @@ impl Engine {
                 estimated = true;
             }
             threads += live.active_threads(now);
-            if let Some(last) = live.events.last() {
-                newest = Some(newest.map_or(last, |prev| prev.max(last)));
-            }
-            labels.push(names::of(id).1);
         }
+
+        // 静默够久了就直接熄火，不留指数尾巴
+        let silent = newest
+            .map(|last| now - last > IDLE_CUTOFF_SECONDS)
+            .unwrap_or(true);
+        let token_rate = if silent { 0.0 } else { token_rate };
 
         Sample {
             rates: Rates {
@@ -532,9 +565,9 @@ impl Engine {
             source: ids.join("+"),
             source_name: labels.join(" + "),
             estimated,
-            events_per_sec,
+            events_per_sec: if silent { 0.0 } else { events_per_sec },
             tokens_per_event: tpe,
-            threads,
+            threads: if silent { 0 } else { threads },
             requests: 0,
             idle_seconds: newest.map(|last| (now - last).max(0) as f64),
             tau_seconds: TAU_SIGNAL,
