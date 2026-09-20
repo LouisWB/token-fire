@@ -1,6 +1,6 @@
-/* 设置面板：自己一个窗口，跟篝火互不干扰 */
-body { padding: 10px; }
-
+/* 设置面板：自己一个窗口，跟篝火互不干扰。
+   面板必须铺满整个窗口 —— 窗口是透明的，留白会变成篝火/桌面透出来的一圈灰边，
+   阴影也一样，画到窗口外就被裁掉，所以干脆不要 padding 也不要 box-shadow */
 #panel {
   display: flex;
   flex-direction: column;
@@ -11,7 +11,7 @@ body { padding: 10px; }
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 14px;
   background: linear-gradient(180deg, rgba(24, 22, 30, 0.97) 0%, rgba(16, 15, 21, 0.98) 100%);
-  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
 }
 
 #panel-head {

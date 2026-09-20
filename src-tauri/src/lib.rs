@@ -20,7 +20,7 @@ fn ornament_size(size: &str) -> (f64, f64) {
 /// 设置面板是独立窗口，尺寸固定。
 /// 这样右键开设置时篝火既不用改大小、也不用挪位置，面板还能自己挑个不挡路的地方待着
 const PANEL_W: f64 = 300.0;
-const PANEL_H: f64 = 585.0; // 量出来的自然高度 560 + 上下各 10 的留白
+const PANEL_H: f64 = 565.0; // 面板内容自然高度 560，多留 5px 免得挤
 const PANEL_GAP: i32 = 12;
 
 pub struct AppState {

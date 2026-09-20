@@ -28,7 +28,7 @@
         "title": "token-fire 设置",
         "url": "panel.html",
         "width": 300,
-        "height": 585,
+        "height": 565,
         "visible": false,
         "resizable": false,
         "maximizable": false,
