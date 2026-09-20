@@ -1,7 +1,7 @@
 mod config;
+mod sources;
 mod usage;
 
-use std::path::PathBuf;
 use std::sync::Mutex;
 use std::time::{Duration, Instant};
 
@@ -20,12 +20,17 @@ fn ornament_size(size: &str) -> (f64, f64) {
 /// 设置面板是独立窗口，尺寸固定。
 /// 这样右键开设置时篝火既不用改大小、也不用挪位置，面板还能自己挑个不挡路的地方待着
 const PANEL_W: f64 = 300.0;
-const PANEL_H: f64 = 565.0; // 面板内容自然高度 560，多留 5px 免得挤
+const PANEL_H: f64 = 624.0; // 面板内容自然高度最多 619（数据源全没找到时），多留 5px 免得挤
 const PANEL_GAP: i32 = 12;
+
+/// 后端自己的采样节奏。Codex 的日志库只留最近约一千行，
+/// 生成快的时候不到十秒就翻篇了，所以不能等前端来催，得自己高频收。
+const TICK_MS: u64 = 300;
 
 pub struct AppState {
     config: Mutex<config::Config>,
-    db_path: PathBuf,
+    /// 所有数据源的采样都在这儿。后台线程负责往里灌数据，命令只管读
+    engine: Mutex<sources::Engine>,
     last_saved: Mutex<Option<Instant>>,
 }
 
@@ -117,14 +122,23 @@ fn place_panel(app: &AppHandle) {
     let _ = panel.set_focus();
 }
 
+/// 摆件和面板都走这一个命令，拿到的是统一后的速率
 #[tauri::command]
-fn sample_rate(state: State<'_, AppState>) -> usage::Sample {
-    usage::sample(&state.db_path, usage::TAU_SECONDS)
+fn sample_rate(state: State<'_, AppState>) -> sources::Sample {
+    let (which, metric) = {
+        let cfg = state.config.lock().unwrap();
+        (sources::Which::parse(&cfg.source), cfg.metric.clone())
+    };
+    state.engine.lock().unwrap().sample(which, &metric)
 }
 
 #[tauri::command]
-fn check_env(state: State<'_, AppState>) -> usage::Env {
-    usage::probe_env(&state.db_path)
+fn check_env(state: State<'_, AppState>) -> sources::Env {
+    let which = {
+        let cfg = state.config.lock().unwrap();
+        sources::Which::parse(&cfg.source)
+    };
+    state.engine.lock().unwrap().probe(which)
 }
 
 #[tauri::command]
@@ -150,6 +164,7 @@ fn set_config(
     state: State<'_, AppState>,
     metric: String,
     size: String,
+    source: String,
     autostart: bool,
 ) -> Result<config::Config, String> {
     let size_changed;
@@ -159,6 +174,7 @@ fn set_config(
         size_changed = cfg.size != size;
         cfg.metric = metric;
         cfg.size = size;
+        cfg.source = source;
         cfg.autostart = autostart;
         snapshot = cfg.clone();
         drop(cfg);
@@ -202,7 +218,10 @@ pub fn run() {
         ))
         .manage(AppState {
             config: Mutex::new(initial.clone()),
-            db_path: usage::default_db_path(),
+            engine: Mutex::new(sources::Engine::new(
+                usage::default_db_path(),
+                sources::codex::default_db(),
+            )),
             last_saved: Mutex::new(None),
         })
         .invoke_handler(tauri::generate_handler![
@@ -250,6 +269,26 @@ pub fn run() {
                 if let tauri::WindowEvent::Moved(pos) = event {
                     handle.state::<AppState>().remember_position(pos.x, pos.y);
                 }
+            });
+
+            // 采样线程：摆件和面板多久问一次是它们自己的事，
+            // 数据源这边必须稳定地高频收，中间断了就会漏掉事件
+            let ticker = app.handle().clone();
+            std::thread::spawn(move || loop {
+                std::thread::sleep(Duration::from_millis(TICK_MS));
+                let Some(state) = ticker.try_state::<AppState>() else {
+                    break;
+                };
+                let which = {
+                    let Ok(cfg) = state.config.lock() else {
+                        break;
+                    };
+                    sources::Which::parse(&cfg.source)
+                };
+                let Ok(mut engine) = state.engine.lock() else {
+                    break;
+                };
+                engine.tick(which);
             });
 
             Ok(())

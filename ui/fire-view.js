@@ -1,7 +1,7 @@
 // 摆件和设置面板共用的"火焰视图"：负责把火势画出来、把读数写出来
 import { flameFrameRects, staticLayerRects, sparksToSvg } from "./pixel/svg.js";
 import { VIEW_BOX } from "./pixel/scene.js";
-import { METRICS, DEFAULT_METRIC, rateToIntensity, approach } from "./ccswitch/rates.js";
+import { METRICS, DEFAULT_METRIC, rateToIntensity, approach, unitOf } from "./ccswitch/rates.js";
 
 const FRAME_COUNT = 4;
 const FRAME_FPS = 14;
@@ -46,7 +46,7 @@ export class FireView {
     this.metric = METRICS[metric] ? metric : DEFAULT_METRIC;
     this.target = rateToIntensity(rate, this.metric);
     if (this.rateEl) this.rateEl.textContent = Math.round(rate).toLocaleString("zh-CN");
-    if (this.unitEl) this.unitEl.textContent = METRICS[this.metric].label + " tok/s";
+    if (this.unitEl) this.unitEl.textContent = unitOf(this.metric);
   }
 
   /* 读不到数据时让火慢慢熄掉，别一直烧着假火 */

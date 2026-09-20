@@ -217,3 +217,24 @@ footer { margin-top: auto; padding-top: 8px; }
 #status.bad { color: #ff8a7a; }
 #status.warn { color: #ffcf7a; }
 #status.ok { color: #7fc98a; }
+/* 数据源下拉框：原生 select 就够，窗口是透明的，别用自绘下拉 */
+#source {
+  width: 100%;
+  padding: 7px 9px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.04);
+  color: #d3d3de;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+#source:hover { background: rgba(255, 255, 255, 0.08); }
+#source:focus { outline: none; border-color: rgba(255, 168, 56, 0.7); }
+
+/* 下拉展开的那一屏是系统画的，给个不透明的底，不然字会跟桌面糊在一起 */
+#source option {
+  background: #17161d;
+  color: #d3d3de;
+}

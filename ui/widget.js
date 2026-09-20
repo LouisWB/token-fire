@@ -1,9 +1,9 @@
 // 摆件窗口：只有一堆篝火，负责烧给用户看
 import { FireView } from "./fire-view.js";
-import { METRICS, DEFAULT_METRIC } from "./ccswitch/rates.js";
+import { METRICS, DEFAULT_METRIC, rateOf } from "./ccswitch/rates.js";
 
 const POLL_MS = 620;
-const ENV_RETRY_MS = 60000; // 没找到 ccswitch 时偶尔回头再看看，找到了就不用再查
+const ENV_RETRY_MS = 15000; // 数据源还没就绪时勤快点回头看看，正常了就不用再查
 
 const invoke = window.__TAURI__?.core?.invoke ?? null;
 
@@ -22,6 +22,9 @@ const fire = new FireView({
 let metric = DEFAULT_METRIC;
 let env = null;
 let lastError = null;
+/// 上次环境检测认定的"在用的源"，用来发现环境说明是不是启动那会儿的旧账
+let envActive = "";
+let refreshing = false;
 
 /* ---------- 顶部那条提示 ---------- */
 
@@ -52,12 +55,16 @@ function renderAlert() {
 }
 
 async function refreshEnv() {
-  if (!invoke) return;
+  if (!invoke || refreshing) return;
+  refreshing = true;
   try {
     env = await invoke("check_env");
+    envActive = (env && env.active) || "";
     renderAlert();
   } catch (err) {
     /* 检测失败就当没检测过 */
+  } finally {
+    refreshing = false;
   }
 }
 
@@ -76,9 +83,13 @@ async function poll() {
   }
   try {
     const sample = await invoke("sample_rate");
-    const rate = (sample && sample.rates && sample.rates[metric]) || 0;
-    fire.setRate(rate, metric);
+    // 实时流只有"生成"这一个口径，后端会自己定，所以以它返回的为准
+    const active = (sample && sample.metric) || metric;
+    fire.setRate(rateOf(sample, active), active);
     lastError = (sample && sample.error) || null;
+    // 环境说明是启动那一刻查的，那会儿后台还没采到样。
+    // 采样说在用的源跟它对不上就顺手重查一次，红提示几秒内自己就收了
+    if (sample && sample.source && !sample.source.split("+").includes(envActive)) refreshEnv();
     renderAlert();
   } catch (err) {
     lastError = "读取失败：" + err;
