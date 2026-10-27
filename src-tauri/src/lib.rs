@@ -1,6 +1,5 @@
 mod config;
-mod sources;
-mod usage;
+mod deepseek;
 
 use std::sync::Mutex;
 use std::time::{Duration, Instant};
@@ -20,17 +19,12 @@ fn ornament_size(size: &str) -> (f64, f64) {
 /// 设置面板是独立窗口，尺寸固定。
 /// 这样右键开设置时篝火既不用改大小、也不用挪位置，面板还能自己挑个不挡路的地方待着
 const PANEL_W: f64 = 300.0;
-const PANEL_H: f64 = 795.0; // 面板内容自然高度最多 789（会话板放满三行时），多留 5px 免得挤
+const PANEL_H: f64 = 580.0;
 const PANEL_GAP: i32 = 12;
-
-/// 后端自己的采样节奏。Codex 的日志库只留最近约一千行，
-/// 生成快的时候不到十秒就翻篇了，所以不能等前端来催，得自己高频收。
-const TICK_MS: u64 = 300;
 
 pub struct AppState {
     config: Mutex<config::Config>,
-    /// 所有数据源的采样都在这儿。后台线程负责往里灌数据，命令只管读
-    engine: Mutex<sources::Engine>,
+    deepseek: Mutex<deepseek::State>,
     last_saved: Mutex<Option<Instant>>,
 }
 
@@ -43,7 +37,9 @@ impl AppState {
         let mut last = self.last_saved.lock().unwrap();
         let now = Instant::now();
         // 拖动时事件很密集，节流一下，别把磁盘写爆
-        if last.map_or(true, |at| now.duration_since(at) > Duration::from_millis(700)) {
+        if last.map_or(true, |at| {
+            now.duration_since(at) > Duration::from_millis(700)
+        }) {
             *last = Some(now);
             let mut cfg = self.config.lock().unwrap();
             cfg.x = Some(x);
@@ -122,29 +118,40 @@ fn place_panel(app: &AppHandle) {
     let _ = panel.set_focus();
 }
 
-/// 摆件和面板都走这一个命令，拿到的是统一后的速率
 #[tauri::command]
-fn sample_rate(state: State<'_, AppState>) -> sources::Sample {
-    let (which, metric) = {
-        let cfg = state.config.lock().unwrap();
-        (sources::Which::parse(&cfg.source), cfg.metric.clone())
+fn deepseek_status(app: AppHandle, state: State<'_, AppState>) -> deepseek::View {
+    let (work, view) = {
+        let mut ds = state.deepseek.lock().unwrap();
+        let work = ds.prepare();
+        (work, ds.view.clone())
     };
-    state.engine.lock().unwrap().sample(which, &metric)
+
+    match work {
+        deepseek::Work::Start => deepseek::start(&app),
+        deepseek::Work::Probe => deepseek::probe(&app),
+        deepseek::Work::None => {}
+    }
+    view
 }
 
 #[tauri::command]
-fn check_env(state: State<'_, AppState>) -> sources::Env {
-    let which = {
-        let cfg = state.config.lock().unwrap();
-        sources::Which::parse(&cfg.source)
+fn refresh_deepseek(app: AppHandle, state: State<'_, AppState>) -> deepseek::View {
+    let work = {
+        let mut ds = state.deepseek.lock().unwrap();
+        ds.request_now()
     };
-    state.engine.lock().unwrap().probe(which)
+    match work {
+        deepseek::Work::Start => deepseek::start(&app),
+        deepseek::Work::Probe => deepseek::probe(&app),
+        deepseek::Work::None => {}
+    }
+    state.deepseek.lock().unwrap().view.clone()
 }
 
-/// 会话板：每个会话一行，实时消耗 + 本轮 输入/缓存/思考/输出
 #[tauri::command]
-fn session_board(state: State<'_, AppState>) -> sources::Board {
-    state.engine.lock().unwrap().board()
+fn open_deepseek_login(app: AppHandle, state: State<'_, AppState>) -> Result<(), String> {
+    let logged_in = state.deepseek.lock().unwrap().view.logged_in;
+    deepseek::open(&app, logged_in)
 }
 
 #[tauri::command]
@@ -168,9 +175,7 @@ fn close_settings(app: AppHandle) {
 fn set_config(
     app: AppHandle,
     state: State<'_, AppState>,
-    metric: String,
     size: String,
-    source: String,
     autostart: bool,
 ) -> Result<config::Config, String> {
     let size_changed;
@@ -178,9 +183,7 @@ fn set_config(
     {
         let mut cfg = state.config.lock().unwrap();
         size_changed = cfg.size != size;
-        cfg.metric = metric;
         cfg.size = size;
-        cfg.source = source;
         cfg.autostart = autostart;
         snapshot = cfg.clone();
         drop(cfg);
@@ -209,7 +212,7 @@ fn set_config(
 }
 
 #[tauri::command]
-fn quit_app(app: tauri::AppHandle) {
+fn quit_app(app: AppHandle) {
     app.exit(0);
 }
 
@@ -224,17 +227,13 @@ pub fn run() {
         ))
         .manage(AppState {
             config: Mutex::new(initial.clone()),
-            engine: Mutex::new(sources::Engine::new(
-                usage::default_db_path(),
-                sources::codex::default_db(),
-                sources::threads::default_db(),
-            )),
+            deepseek: Mutex::new(deepseek::State::default()),
             last_saved: Mutex::new(None),
         })
         .invoke_handler(tauri::generate_handler![
-            sample_rate,
-            check_env,
-            session_board,
+            deepseek_status,
+            refresh_deepseek,
+            open_deepseek_login,
             get_config,
             open_settings,
             close_settings,
@@ -242,9 +241,7 @@ pub fn run() {
             quit_app
         ])
         .setup(move |app| {
-            let window = app
-                .get_webview_window("main")
-                .expect("找不到主窗口");
+            let window = app.get_webview_window("main").expect("找不到主窗口");
 
             let (w, h) = ornament_size(&initial.size);
             let _ = window.set_size(LogicalSize::new(w, h));
@@ -266,10 +263,10 @@ pub fn run() {
             }
             clamp_into_monitor(&window);
 
-            // 第一次跑（还没有配置文件）说明用户是新的，直接把设置面板亮出来，
-            // 因为面板里会写清楚"有没有找到 ccswitch"
+            // 第一次运行先打开设置面板和 DeepSeek 官方登录页
             if first_run {
                 place_panel(app.handle());
+                let _ = deepseek::open(app.handle(), false);
             }
 
             let handle = app.handle().clone();
@@ -279,25 +276,17 @@ pub fn run() {
                 }
             });
 
-            // 采样线程：摆件和面板多久问一次是它们自己的事，
-            // 数据源这边必须稳定地高频收，中间断了就会漏掉事件
-            let ticker = app.handle().clone();
-            std::thread::spawn(move || loop {
-                std::thread::sleep(Duration::from_millis(TICK_MS));
-                let Some(state) = ticker.try_state::<AppState>() else {
-                    break;
-                };
-                let which = {
-                    let Ok(cfg) = state.config.lock() else {
-                        break;
-                    };
-                    sources::Which::parse(&cfg.source)
-                };
-                let Ok(mut engine) = state.engine.lock() else {
-                    break;
-                };
-                engine.tick(which);
-            });
+            if let Some(login) = app.get_webview_window("deepseek") {
+                let handle = app.handle().clone();
+                login.on_window_event(move |event| {
+                    if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                        api.prevent_close();
+                        if let Some(window) = handle.get_webview_window("deepseek") {
+                            let _ = window.hide();
+                        }
+                    }
+                });
+            }
 
             Ok(())
         })

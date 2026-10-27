@@ -6,10 +6,6 @@ use std::path::PathBuf;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Config {
-    /// 火势口径：total | fresh | output（实时流固定按 live 口径走）
-    pub metric: String,
-    /// 数据源：auto | codex | claude | gemini | ccswitch
-    pub source: String,
     /// 摆件大小：small | medium | large
     pub size: String,
     pub autostart: bool,
@@ -20,8 +16,6 @@ pub struct Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
-            metric: "total".to_string(),
-            source: "auto".to_string(),
             size: "medium".to_string(),
             autostart: false,
             x: None,

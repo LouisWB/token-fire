@@ -67,12 +67,12 @@ export function buildFlameLayer(intensity, frame, seed) {
 
 // 强度档位：预览和调试都用这一套
 export const LEVELS = [
-  { intensity: 0.0, label: "熄火", rate: 0 },
-  { intensity: 0.2, label: "微火", rate: 30 },
-  { intensity: 0.4, label: "小火", rate: 90 },
-  { intensity: 0.6, label: "中火", rate: 200 },
-  { intensity: 0.8, label: "旺火", rate: 450 },
-  { intensity: 1.0, label: "烈焰", rate: 900 },
+  { intensity: 0.0, label: "熄火", tokens: 0 },
+  { intensity: 0.2, label: "微火", tokens: 4200 },
+  { intensity: 0.4, label: "小火", tokens: 17000 },
+  { intensity: 0.6, label: "中火", tokens: 72000 },
+  { intensity: 0.8, label: "旺火", tokens: 300000 },
+  { intensity: 1.0, label: "烈焰", tokens: 5000000 },
 ];
 
 // 摆件裁切：去掉四周空白，上方多留一段给火星往上飘

@@ -34,7 +34,7 @@
   pointer-events: none;
 }
 
-/* 实时读数：常驻但压得很淡，鼠标放上去才看清 */
+/* 今日用量读数：常驻但压得很淡，鼠标放上去才看清 */
 #readout {
   position: absolute;
   left: 50%;

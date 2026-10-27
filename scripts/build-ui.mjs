@@ -8,7 +8,6 @@ const ui = resolve(root, "ui");
 
 rmSync(ui, { recursive: true, force: true });
 mkdirSync(resolve(ui, "pixel"), { recursive: true });
-mkdirSync(resolve(ui, "ccswitch"), { recursive: true });
 
 for (const file of readdirSync(resolve(root, "web"))) {
   cpSync(resolve(root, "web", file), resolve(ui, file));
@@ -16,10 +15,9 @@ for (const file of readdirSync(resolve(root, "web"))) {
 for (const file of readdirSync(resolve(root, "src", "pixel"))) {
   cpSync(resolve(root, "src", "pixel", file), resolve(ui, "pixel", file));
 }
-cpSync(resolve(root, "src", "ccswitch", "rates.js"), resolve(ui, "ccswitch", "rates.js"));
 const LF = String.fromCharCode(10);
 const CRLF = String.fromCharCode(13) + LF;
-for (const dir of ["", "pixel", "ccswitch"]) {
+for (const dir of ["", "pixel"]) {
   for (const entry of readdirSync(resolve(ui, dir), { withFileTypes: true })) {
     if (!entry.isFile()) continue;
     const target = resolve(ui, dir, entry.name);

@@ -24,19 +24,29 @@
         <g class="frame" data-frame="3"></g>
         <g id="preview-sparks" class="sparks"></g>
       </svg>
-      <div id="preview-rate"><b id="rate">0</b><span id="unit">tok/s</span></div>
+      <div id="preview-rate"><b id="rate">0</b><span id="unit">tokens</span></div>
     </div>
 
     <div class="group">
-      <h2>数据源</h2>
-      <select id="source"></select>
-      <p id="env" class="hint">检测中…</p>
+      <div class="group-head">
+        <h2>DeepSeek 账户</h2>
+        <span id="account-state" class="account-state">未登录</span>
+      </div>
+      <p id="account-detail" class="hint">登录后读取官方用量数据</p>
+      <div class="account-actions">
+        <button id="login" class="primary" type="button">登录 DeepSeek</button>
+        <button id="sync" type="button">刷新</button>
+      </div>
     </div>
 
     <div class="group">
-      <h2>火势口径</h2>
-      <div id="metrics" class="options row"></div>
-      <p id="metric-hint" class="hint"></p>
+      <h2>Token 用量</h2>
+      <div class="usage-grid">
+        <div><span>今日</span><b id="today">—</b></div>
+        <div><span>昨日</span><b id="yesterday">—</b></div>
+        <div><span>本月</span><b id="month">—</b></div>
+      </div>
+      <p id="usage-hint" class="hint">数据约延迟 5 分钟</p>
     </div>
 
     <div class="group">
@@ -54,18 +64,8 @@
     </div>
 
     <div class="group">
-      <div class="group-head">
-        <h2>会话</h2>
-        <span class="legend">↑ 输入 ⇢ 缓存 ↓ 输出 ✦ 思考</span>
-      </div>
-      <div id="sessions" class="sessions">
-        <p class="hint" id="sessions-hint">读取中…</p>
-      </div>
-    </div>
-
-    <div class="group">
-      <h2>状态</h2>
-      <p id="status" class="hint">连接中…</p>
+      <h2>同步状态</h2>
+      <p id="status" class="hint">准备连接 DeepSeek…</p>
     </div>
 
     <footer>

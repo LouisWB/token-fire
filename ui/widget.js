@@ -1,10 +1,7 @@
-// 摆件窗口：只有一堆篝火，负责烧给用户看
+// 摆件窗口：只显示篝火和今天从 DeepSeek 读取到的 Token 用量
 import { FireView } from "./fire-view.js";
-import { METRICS, DEFAULT_METRIC, rateOf } from "./ccswitch/rates.js";
 
-const POLL_MS = 250;
-const ENV_RETRY_MS = 15000; // 数据源还没就绪时勤快点回头看看，正常了就不用再查
-
+const POLL_MS = 1200;
 const invoke = window.__TAURI__?.core?.invoke ?? null;
 
 const alertEl = document.getElementById("alert");
@@ -19,29 +16,21 @@ const fire = new FireView({
   glowEl: document.getElementById("glow"),
 });
 
-let metric = DEFAULT_METRIC;
-let env = null;
-let lastError = null;
-/// 上次环境检测认定的"在用的源"，用来发现环境说明是不是启动那会儿的旧账
-let envActive = "";
-let refreshing = false;
+let polling = false;
 
-/* ---------- 顶部那条提示 ---------- */
-
-function renderAlert() {
+function renderAlert(view) {
   let level = "";
   let text = "";
   let detail = "";
 
-  // 环境检测的结论更具体（哪一步缺了、该去干什么），优先显示它
-  if (env && env.level !== "ok") {
-    level = env.level;
-    text = env.short;
-    detail = env.message;
-  } else if (lastError) {
+  if (view?.error) {
     level = "bad";
-    text = "读不到用量库";
-    detail = lastError;
+    text = "DeepSeek 同步失败";
+    detail = view.error;
+  } else if (view && !view.loggedIn) {
+    level = "warn";
+    text = "登录 DeepSeek";
+    detail = view.message || "点击这里登录，然后读取官方用量";
   }
 
   if (!level) {
@@ -54,51 +43,23 @@ function renderAlert() {
   alertEl.title = detail;
 }
 
-async function refreshEnv() {
-  if (!invoke || refreshing) return;
-  refreshing = true;
-  try {
-    env = await invoke("check_env");
-    envActive = (env && env.active) || "";
-    renderAlert();
-  } catch (err) {
-    /* 检测失败就当没检测过 */
-  } finally {
-    refreshing = false;
-  }
-}
-
-/* ---------- 数据 ---------- */
-
-function applyConfig(cfg) {
-  if (cfg && METRICS[cfg.metric]) metric = cfg.metric;
-}
-
 async function poll() {
-  if (!invoke) {
-    lastError = "没有 Tauri 环境";
-    fire.fade();
-    renderAlert();
+  if (!invoke || polling) {
+    if (!invoke) renderAlert({ loggedIn: false, message: "没有 Tauri 环境" });
     return;
   }
+  polling = true;
   try {
-    const sample = await invoke("sample_rate");
-    // 实时流只有"生成"这一个口径，后端会自己定，所以以它返回的为准
-    const active = (sample && sample.metric) || metric;
-    fire.setRate(rateOf(sample, active), active);
-    lastError = (sample && sample.error) || null;
-    // 环境说明是启动那一刻查的，那会儿后台还没采到样。
-    // 采样说在用的源跟它对不上就顺手重查一次，红提示几秒内自己就收了
-    if (sample && sample.source && !sample.source.split("+").includes(envActive)) refreshEnv();
-    renderAlert();
+    const view = await invoke("deepseek_status");
+    fire.setUsage(view?.loggedIn ? view.todayTokens : 0);
+    renderAlert(view);
   } catch (err) {
-    lastError = "读取失败：" + err;
     fire.fade();
-    renderAlert();
+    renderAlert({ error: "读取失败：" + err });
+  } finally {
+    polling = false;
   }
 }
-
-/* ---------- 交互 ---------- */
 
 // 拖动整个摆件
 ornament.addEventListener("mousedown", async (event) => {
@@ -117,34 +78,17 @@ ornament.addEventListener("contextmenu", (event) => {
   if (invoke) invoke("open_settings");
 });
 
-// 出问题的那条提示点一下就去看详情
+// 登录提示点一下直接打开 DeepSeek 官方页面
 alertEl.addEventListener("mousedown", (event) => {
   event.stopPropagation();
   event.preventDefault();
-  if (invoke) invoke("open_settings");
+  if (invoke) invoke("open_deepseek_login");
 });
-
-/* ---------- 启动 ---------- */
 
 async function boot() {
   fire.mount();
-
-  if (invoke) {
-    try {
-      applyConfig(await invoke("get_config"));
-    } catch (err) {
-      /* 读不到就用默认值 */
-    }
-    // 设置面板在另一个窗口里改，改完会广播过来
-    window.__TAURI__.event?.listen?.("config-changed", (event) => applyConfig(event.payload));
-  }
-
-  await refreshEnv();
   await poll();
   setInterval(poll, POLL_MS);
-  setInterval(() => {
-    if (!env || env.level !== "ok") refreshEnv();
-  }, ENV_RETRY_MS);
   fire.start();
 }
 

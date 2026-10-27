@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DeepSeek</title>
+</head>
+<body>
+  <script>
+    const page = new URLSearchParams(location.search).get("page");
+    const target = page === "login"
+      ? "https://platform.deepseek.com/sign_in"
+      : "https://platform.deepseek.com/usage";
+    location.replace(target);
+  </script>
+</body>
+</html>

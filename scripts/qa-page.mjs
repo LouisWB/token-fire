@@ -1,5 +1,4 @@
-// 用无头 Chrome 截图某个页面：比在桌面上点来点去可靠得多
-// 做法是把 web/ + src/ 的 ES 模块拼成一个 classic script，绕开 file:// 的模块 CORS 限制
+// 用无头 Chrome 截图设置面板，调布局时不用反复启动桌面应用
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
@@ -11,15 +10,11 @@ const tmp = resolve(outDir, "page");
 const LF = String.fromCharCode(10);
 const CRLF = String.fromCharCode(13) + LF;
 
-// headless Chrome 不理 --window-size，视口固定成 500x373，
-// 所以页面得自己钉成目标尺寸，量出来的才是窗口里的真实布局
 const PAGE = process.env.QA_PAGE || "panel";
 const LOCK_W = Number(process.env.QA_W || 300);
-const LOCK_H = Number(process.env.QA_H || 624);
+const LOCK_H = Number(process.env.QA_H || 580);
 const SHOT = process.env.QA_SHOT || PAGE + ".png";
-// 量一下面板内容的自然高度：窗口是固定尺寸的，差几像素就会把内容切掉
 const MEASURE = !!process.env.QA_MEASURE;
-const ENV_LEVEL = process.env.QA_ENV || "ok";
 const SCRIPT = PAGE === "index" ? "widget.js" : PAGE + ".js";
 
 const MODULES = [
@@ -29,7 +24,6 @@ const MODULES = [
   "src/pixel/logs.js",
   "src/pixel/scene.js",
   "src/pixel/svg.js",
-  "src/ccswitch/rates.js",
   "web/fire-view.js",
 ];
 
@@ -48,164 +42,34 @@ function flatten(files) {
   return chunks.join(LF + LF);
 }
 
-// 三种环境检测结果的假数据，摆件上那条提示和面板里的说明都靠它
-const ENV_OBJECTS = {
-  ok: {
-    active: "codex",
-    active_name: "Codex 实时流",
-    level: "ok",
-    short: "",
-    message: "Codex 实时流 · C:/Users/louis/.codex/logs_2.sqlite · 毫秒级跟手",
-    sources: [
-      {
-        id: "codex",
-        name: "Codex 实时流",
-        short: "",
-        detail: "Codex 实时流 · C:/Users/louis/.codex/logs_2.sqlite · 毫秒级跟手",
-        path: "C:/Users/louis/.codex/logs_2.sqlite",
-        live: true,
-        experimental: false,
-        available: true,
-        level: "ok",
-      },
-      {
-        id: "claude",
-        name: "Claude Code 会话",
-        short: "还没有会话",
-        detail: "有 Claude Code 的目录（C:/Users/louis/.claude/projects），但最近 6 小时没有会话记录。",
-        path: "C:/Users/louis/.claude/projects",
-        live: true,
-        experimental: true,
-        available: false,
-        level: "warn",
-      },
-      {
-        id: "gemini",
-        name: "Gemini CLI 会话",
-        short: "没找到 Gemini",
-        detail: "没找到 Gemini CLI 的会话目录 C:/Users/louis/.gemini/tmp。",
-        path: "C:/Users/louis/.gemini/tmp",
-        live: true,
-        experimental: true,
-        available: false,
-        level: "bad",
-      },
-      {
-        id: "ccswitch",
-        name: "cc-switch 用量库",
-        short: "",
-        detail:
-          "已连上 ccswitch 用量库，累计 8643 条请求记录。数字最准，但请求结束才落库，比实时流慢半拍。",
-        path: "C:/Users/louis/.cc-switch/cc-switch.db",
-        live: false,
-        experimental: false,
-        available: true,
-        level: "ok",
-      },
-    ],
-  },
-  warn: {
-    active: "ccswitch",
-    active_name: "cc-switch 用量库",
-    level: "warn",
-    short: "还没有用量记录",
-    message:
-      "找到用量库了，但里面还没有请求记录 —— 用 ccswitch 转发一次 Codex / Claude 请求，火就烧起来了",
-    sources: [],
-  },
-  bad: {
-    active: "codex",
-    active_name: "Codex 实时流",
-    level: "bad",
-    short: "Codex 没接上",
-    message: "没找到 Codex 的日志库 C:/Users/louis/.codex/logs_2.sqlite。装了 Codex 并且至少聊过一次才会有。",
-    sources: [],
-  },
-};
-const CONFIG = { metric: "total", size: "medium", autostart: true, x: null, y: null };
-const SAMPLE = {
-  rates: { total: 618.4, fresh: 618.4, output: 618.4 },
-  metric: "live",
-  source: "codex",
-  source_name: "Codex 实时流",
-  estimated: true,
-  events_per_sec: 206.3,
-  tokens_per_event: 3.0,
-  threads: 2,
-  requests: 0,
-  idle_seconds: 0.8,
-  tau_seconds: 3.5,
+const CONFIG = { size: "medium", autostart: true, x: null, y: null };
+const DEEPSEEK = {
+  loggedIn: true,
+  syncing: false,
+  todayTokens: 128430,
+  yesterdayTokens: 96210,
+  monthTokens: 2749300,
+  updatedAt: Date.now(),
+  account: "DeepSeek ID 10001",
+  message: "已连接 DeepSeek",
   error: null,
 };
-const BOARD = {
-  rows: [
-    {
-      id: "01a0bdc6",
-      label: "token-fire",
-      cwd: "token-fire",
-      branch: "main",
-      model: "gpt-5.2-codex",
-      tokens_used: 24084843,
-      rate: 842,
-      idle_seconds: 0.4,
-      input_tokens: 144606,
-      cached_input_tokens: 144384,
-      cache_write_input_tokens: 0,
-      output_tokens: 2662,
-      reasoning_output_tokens: 1980,
-    },
-    {
-      id: "01a0bd91",
-      label: "子代理 · 数据空间门户",
-      cwd: "数据空间门户",
-      branch: "codex/board",
-      model: "gpt-5.2-codex",
-      tokens_used: 918442,
-      rate: 120,
-      idle_seconds: 2.6,
-      input_tokens: 96120,
-      cached_input_tokens: 90100,
-      cache_write_input_tokens: 0,
-      output_tokens: 2180,
-      reasoning_output_tokens: 440,
-    },
-    {
-      id: "01a0bc2f",
-      label: "mikologym",
-      cwd: "mikologym",
-      branch: "",
-      model: "gpt-5.1-codex",
-      tokens_used: 40122,
-      rate: 0,
-      idle_seconds: 61,
-      input_tokens: 12040,
-      cached_input_tokens: 11800,
-      cache_write_input_tokens: 0,
-      output_tokens: 640,
-      reasoning_output_tokens: 0,
-    },
-  ],
-  error: null,
-};
+
 const STUB = [
   "window.__TAURI__ = {",
   "  core: {",
-  "    invoke: async (cmd, args) => {",
+  "    invoke: async (cmd) => {",
   "      if (cmd === 'get_config') return CONFIG;",
-  "      if (cmd === 'sample_rate') return SAMPLE;",
-  "      if (cmd === 'check_env') return ENV;\n      if (cmd === 'session_board') return __BOARD__;",
+  "      if (cmd === 'deepseek_status' || cmd === 'refresh_deepseek') return DEEPSEEK;",
   "      return {};",
   "    },",
   "  },",
-  "  event: { listen: async () => () => {} },",
   "  window: { getCurrentWindow: () => ({ startDragging: async () => {} }) },",
   "};",
 ]
   .join(LF)
   .replace("CONFIG", JSON.stringify(CONFIG))
-  .replace("SAMPLE", JSON.stringify(SAMPLE))
-  .replace("ENV", JSON.stringify(ENV_OBJECTS[ENV_LEVEL] || ENV_OBJECTS.ok))
-  .replace("__BOARD__", JSON.stringify(BOARD));
+  .replace("DEEPSEEK", JSON.stringify(DEEPSEEK));
 
 const LOCK = [
   "<style>",
@@ -225,14 +89,14 @@ const html = source
       (MEASURE
         ? LF +
           "<script>setTimeout(function () {" +
-          "document.title = 'MEASURE=' + document.getElementById('panel').scrollHeight + ' SESS=' + document.getElementById('sessions').scrollHeight;" +
+          "document.title = 'MEASURE=' + document.getElementById('panel').scrollHeight;" +
           "}, 1500);</script>"
         : ""),
   );
 
 rmSync(tmp, { recursive: true, force: true });
 mkdirSync(tmp, { recursive: true });
-for (const file of ["base.css", "style.css", "panel.css", "pixel", "ccswitch"]) {
+for (const file of ["base.css", "style.css", "panel.css", "pixel"]) {
   const from = resolve(root, "web", file);
   if (existsSync(from)) {
     writeFileSync(resolve(tmp, file), readFileSync(from, "utf8"), "utf8");
@@ -263,8 +127,8 @@ if (MEASURE) {
     "--dump-dom",
     "file:///" + resolve(tmp, PAGE + ".html").replace(/\\/g, "/"),
   ], { stdio: "pipe", maxBuffer: 64 * 1024 * 1024 }).toString();
-  const found = dom.match(/MEASURE=(\d+) SESS=(\d+)/);
-  console.log(found ? PAGE + " 内容自然高度 " + found[1] + "px（会话块 " + found[2] + "px）" : "没量到高度");
+  const found = dom.match(/MEASURE=(\d+)/);
+  console.log(found ? PAGE + " 内容自然高度 " + found[1] + "px" : "没量到高度");
   process.exit(0);
 }
 

@@ -21,7 +21,7 @@ const cards = LEVELS.map((lv, i) => {
       ${svg}
       <figcaption>
         <b>${lv.label}</b>
-        <span>${lv.rate} tok/s</span>
+        <span>${lv.tokens} tokens</span>
         <em>intensity ${lv.intensity.toFixed(2)}</em>
       </figcaption>
     </figure>`;

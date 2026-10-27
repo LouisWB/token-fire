@@ -28,7 +28,7 @@
         "title": "token-fire 设置",
         "url": "panel.html",
         "width": 300,
-        "height": 565,
+        "height": 580,
         "visible": false,
         "resizable": false,
         "maximizable": false,
@@ -38,6 +38,24 @@
         "skipTaskbar": true,
         "shadow": false,
         "center": false
+      },
+      {
+        "label": "deepseek",
+        "title": "DeepSeek 用量",
+        "url": "deepseek.html?page=usage",
+        "width": 1000,
+        "height": 760,
+        "minWidth": 720,
+        "minHeight": 520,
+        "visible": false,
+        "resizable": true,
+        "maximizable": true,
+        "decorations": true,
+        "transparent": false,
+        "alwaysOnTop": false,
+        "skipTaskbar": false,
+        "shadow": true,
+        "center": true
       }
     ],
     "security": {

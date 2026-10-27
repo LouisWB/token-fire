@@ -1,7 +1,6 @@
 // 摆件和设置面板共用的"火焰视图"：负责把火势画出来、把读数写出来
 import { flameFrameRects, staticLayerRects, sparksToSvg } from "./pixel/svg.js";
 import { VIEW_BOX } from "./pixel/scene.js";
-import { METRICS, DEFAULT_METRIC, rateToIntensity, approach, unitOf } from "./ccswitch/rates.js";
 
 const FRAME_COUNT = 4;
 const FRAME_FPS = 14;
@@ -9,6 +8,27 @@ const QUANT = 30;        // 火势量化成多少档
 const STATIC_QUANT = 8;  // 炭火变化很慢，单独粗量化，省点重绘
 const RENDER_MIN_MS = 55;
 const GLIDE_MS = 170;    // 火势趋近的时间常数
+const TOKEN_QUIET = 1000;
+const TOKEN_FULL = 5000000;
+
+export function formatTokenCount(tokens) {
+  const n = Math.max(0, Number(tokens) || 0);
+  if (n < 1000) return String(Math.round(n));
+  if (n < 1000000) {
+    const value = n / 1000;
+    return (value < 100 ? value.toFixed(1) : Math.round(value)) + "k";
+  }
+  const value = n / 1000000;
+  return (value < 100 ? value.toFixed(1) : Math.round(value)) + "M";
+}
+
+function usageToIntensity(tokens) {
+  const n = Math.max(0, Number(tokens) || 0);
+  if (n <= 0) return 0;
+  const span = Math.log(TOKEN_FULL / TOKEN_QUIET);
+  const level = Math.log(Math.max(n, TOKEN_QUIET) / TOKEN_QUIET) / span;
+  return Math.min(1, 0.04 + level * 0.96);
+}
 
 export class FireView {
   constructor({ scene, staticLayer, sparks, rateEl, unitEl, glowEl, seed = 7 }) {
@@ -26,7 +46,6 @@ export class FireView {
     this.lastQuant = -1;
     this.lastStaticQuant = -1;
     this.lastTime = 0;
-    this.metric = DEFAULT_METRIC;
   }
 
   /* 画骨架：viewBox、帧周期、静态层、火星 */
@@ -41,12 +60,11 @@ export class FireView {
     this.paint(0, true);
   }
 
-  /* 收到一次速率采样：定下目标火势，顺手更新读数 */
-  setRate(rate, metric) {
-    this.metric = METRICS[metric] ? metric : DEFAULT_METRIC;
-    this.target = rateToIntensity(rate, this.metric);
-    if (this.rateEl) this.rateEl.textContent = Math.round(rate).toLocaleString("zh-CN");
-    if (this.unitEl) this.unitEl.textContent = unitOf(this.metric);
+  /* 收到今日用量：定下目标火势，顺手更新读数 */
+  setUsage(tokens) {
+    this.target = usageToIntensity(tokens);
+    if (this.rateEl) this.rateEl.textContent = formatTokenCount(tokens);
+    if (this.unitEl) this.unitEl.textContent = "tokens";
   }
 
   /* 读不到数据时让火慢慢熄掉，别一直烧着假火 */

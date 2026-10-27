@@ -3,12 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "像素篝火桌面摆件：把 ccswitch 的实时 token 消耗速度映射成火焰大小",
+  "description": "像素篝火桌面摆件：火焰跟随 DeepSeek 每日 token 用量",
   "scripts": {
     "art": "node scripts/build-campfire.mjs",
     "icons": "node scripts/make-icons.mjs",
     "ui": "node scripts/build-ui.mjs",
-    "probe": "node scripts/probe-rate.mjs 14",
     "qa:page": "node scripts/qa-page.mjs",
     "dev": "npm run prepare:app && cargo build --manifest-path src-tauri/Cargo.toml && npm run start:app",
     "prepare:app": "npm run art && npm run icons && npm run ui",

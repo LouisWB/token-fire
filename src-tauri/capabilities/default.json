@@ -2,6 +2,6 @@
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
   "description": "篝火摆件主窗口和设置面板",
-  "windows": ["main", "settings"],
+  "windows": ["main", "settings", "deepseek"],
   "permissions": ["core:default", "core:window:allow-start-dragging"]
 }
