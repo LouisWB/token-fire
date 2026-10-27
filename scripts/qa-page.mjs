@@ -137,13 +137,63 @@ const SAMPLE = {
   tau_seconds: 3.5,
   error: null,
 };
+const BOARD = {
+  rows: [
+    {
+      id: "01a0bdc6",
+      label: "token-fire",
+      cwd: "token-fire",
+      branch: "main",
+      model: "gpt-5.2-codex",
+      tokens_used: 24084843,
+      rate: 842,
+      idle_seconds: 0.4,
+      input_tokens: 144606,
+      cached_input_tokens: 144384,
+      cache_write_input_tokens: 0,
+      output_tokens: 2662,
+      reasoning_output_tokens: 1980,
+    },
+    {
+      id: "01a0bd91",
+      label: "子代理 · 数据空间门户",
+      cwd: "数据空间门户",
+      branch: "codex/board",
+      model: "gpt-5.2-codex",
+      tokens_used: 918442,
+      rate: 120,
+      idle_seconds: 2.6,
+      input_tokens: 96120,
+      cached_input_tokens: 90100,
+      cache_write_input_tokens: 0,
+      output_tokens: 2180,
+      reasoning_output_tokens: 440,
+    },
+    {
+      id: "01a0bc2f",
+      label: "mikologym",
+      cwd: "mikologym",
+      branch: "",
+      model: "gpt-5.1-codex",
+      tokens_used: 40122,
+      rate: 0,
+      idle_seconds: 61,
+      input_tokens: 12040,
+      cached_input_tokens: 11800,
+      cache_write_input_tokens: 0,
+      output_tokens: 640,
+      reasoning_output_tokens: 0,
+    },
+  ],
+  error: null,
+};
 const STUB = [
   "window.__TAURI__ = {",
   "  core: {",
   "    invoke: async (cmd, args) => {",
   "      if (cmd === 'get_config') return CONFIG;",
   "      if (cmd === 'sample_rate') return SAMPLE;",
-  "      if (cmd === 'check_env') return ENV;",
+  "      if (cmd === 'check_env') return ENV;\n      if (cmd === 'session_board') return __BOARD__;",
   "      return {};",
   "    },",
   "  },",
@@ -154,7 +204,8 @@ const STUB = [
   .join(LF)
   .replace("CONFIG", JSON.stringify(CONFIG))
   .replace("SAMPLE", JSON.stringify(SAMPLE))
-  .replace("ENV", JSON.stringify(ENV_OBJECTS[ENV_LEVEL] || ENV_OBJECTS.ok));
+  .replace("ENV", JSON.stringify(ENV_OBJECTS[ENV_LEVEL] || ENV_OBJECTS.ok))
+  .replace("__BOARD__", JSON.stringify(BOARD));
 
 const LOCK = [
   "<style>",
@@ -174,7 +225,7 @@ const html = source
       (MEASURE
         ? LF +
           "<script>setTimeout(function () {" +
-          "document.title = 'MEASURE=' + document.getElementById('panel').scrollHeight;" +
+          "document.title = 'MEASURE=' + document.getElementById('panel').scrollHeight + ' SESS=' + document.getElementById('sessions').scrollHeight;" +
           "}, 1500);</script>"
         : ""),
   );
@@ -212,8 +263,8 @@ if (MEASURE) {
     "--dump-dom",
     "file:///" + resolve(tmp, PAGE + ".html").replace(/\\/g, "/"),
   ], { stdio: "pipe", maxBuffer: 64 * 1024 * 1024 }).toString();
-  const found = dom.match(/MEASURE=(\d+)/);
-  console.log(found ? PAGE + " 内容自然高度 " + found[1] + "px" : "没量到高度");
+  const found = dom.match(/MEASURE=(\d+) SESS=(\d+)/);
+  console.log(found ? PAGE + " 内容自然高度 " + found[1] + "px（会话块 " + found[2] + "px）" : "没量到高度");
   process.exit(0);
 }
 

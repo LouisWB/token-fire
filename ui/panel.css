@@ -102,6 +102,20 @@
   letter-spacing: 0.6px;
 }
 
+/* 组标题那一行：左边标题，右边小图例 —— 挤在同一行，不额外占高度 */
+.group-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.group-head .legend {
+  color: #5c5c69;
+  font-size: 9.5px;
+  letter-spacing: 0.2px;
+}
+
 .options { display: flex; flex-direction: column; gap: 5px; }
 .options.row { flex-direction: row; }
 .options.row > button { flex: 1; }
@@ -238,3 +252,87 @@ footer { margin-top: auto; padding-top: 8px; }
   background: #17161d;
   color: #d3d3de;
 }
+
+/* 会话板：一行一个会话。左边那条竖线就是「这个会话在不在烧」 */
+.sessions {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  /* 正好放三行，第四个会话起滚动 —— 面板本身不该再长高了 */
+  max-height: 154px;
+  overflow-y: auto;
+}
+
+.sessions::-webkit-scrollbar { width: 6px; }
+.sessions::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.sess {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 auto;
+  gap: 2px;
+  padding: 6px 9px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-left: 2px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.03);
+  transition: border-color 200ms ease, background 200ms ease;
+}
+
+.sess.live {
+  border-left-color: #ffa838;
+  background: rgba(255, 140, 30, 0.1);
+}
+
+.sess-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.sess-name {
+  min-width: 0;
+  overflow: hidden;
+  color: #d3d3de;
+  font-size: 11.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sess-rate {
+  flex: 0 0 auto;
+  color: #7b7b8c;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  transition: color 200ms ease;
+}
+
+.sess.live .sess-rate { color: #ffc061; }
+
+/* 明细行：标记暗、数字亮，五格等距排开，累计单独推到右边 */
+.sess-sub {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  overflow: hidden;
+  color: #66666f;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.sess-sub b { color: #9a9aab; font-weight: 500; }
+
+.sess-sub .k-cache { color: #565663; }
+.sess-sub .k-cache b { color: #7b7b8c; }
+
+.sess-sub .k-total {
+  margin-left: auto;
+  color: #565663;
+}
+
+.sess-sub .k-total b { color: #7b7b8c; }

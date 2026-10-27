@@ -20,7 +20,7 @@ fn ornament_size(size: &str) -> (f64, f64) {
 /// 设置面板是独立窗口，尺寸固定。
 /// 这样右键开设置时篝火既不用改大小、也不用挪位置，面板还能自己挑个不挡路的地方待着
 const PANEL_W: f64 = 300.0;
-const PANEL_H: f64 = 624.0; // 面板内容自然高度最多 619（数据源全没找到时），多留 5px 免得挤
+const PANEL_H: f64 = 795.0; // 面板内容自然高度最多 789（会话板放满三行时），多留 5px 免得挤
 const PANEL_GAP: i32 = 12;
 
 /// 后端自己的采样节奏。Codex 的日志库只留最近约一千行，
@@ -141,6 +141,12 @@ fn check_env(state: State<'_, AppState>) -> sources::Env {
     state.engine.lock().unwrap().probe(which)
 }
 
+/// 会话板：每个会话一行，实时消耗 + 本轮 输入/缓存/思考/输出
+#[tauri::command]
+fn session_board(state: State<'_, AppState>) -> sources::Board {
+    state.engine.lock().unwrap().board()
+}
+
 #[tauri::command]
 fn get_config(state: State<'_, AppState>) -> config::Config {
     state.snapshot()
@@ -221,12 +227,14 @@ pub fn run() {
             engine: Mutex::new(sources::Engine::new(
                 usage::default_db_path(),
                 sources::codex::default_db(),
+                sources::threads::default_db(),
             )),
             last_saved: Mutex::new(None),
         })
         .invoke_handler(tauri::generate_handler![
             sample_rate,
             check_env,
+            session_board,
             get_config,
             open_settings,
             close_settings,

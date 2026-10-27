@@ -7,6 +7,7 @@ pub mod calibrate;
 pub mod claude;
 pub mod codex;
 pub mod gemini;
+pub mod threads;
 
 use serde::Serialize;
 use std::collections::HashMap;
@@ -235,6 +236,14 @@ pub struct Env {
     pub sources: Vec<SourceStatus>,
 }
 
+/// 会话板：每个会话一行的消耗与明细。
+/// 它跟选了哪个数据源无关 —— 读的是 Codex 自己的会话库，天生按会话分行
+#[derive(Debug, Clone, Serialize)]
+pub struct Board {
+    pub rows: Vec<threads::ThreadInfo>,
+    pub error: Option<String>,
+}
+
 /// 一次采样结果。rates 沿用老结构，前端不用改判定逻辑
 #[derive(Debug, Clone, Serialize)]
 pub struct Sample {
@@ -280,19 +289,22 @@ pub struct Engine {
     cc_db: PathBuf,
     cc_cursor: Option<i64>,
     pub calibration: Calibration,
+    /// 会话板的数据源，跟实时流并行收
+    pub threads: threads::Threads,
     /// 进程启动时刻。比它更早的窗口我们没记过账，不能拿来标定
     run_since: i64,
     errors: HashMap<String, String>,
 }
 
 impl Engine {
-    pub fn new(cc_db: PathBuf, codex_db: PathBuf) -> Self {
+    pub fn new(cc_db: PathBuf, codex_db: PathBuf, state_db: PathBuf) -> Self {
         Self {
             codex: codex::CodexStream::new(codex_db),
             claude: claude::ClaudeStream::new(claude::default_root()),
             gemini: gemini::GeminiStream::new(gemini::default_root()),
             cc_db,
             cc_cursor: None,
+            threads: threads::Threads::new(state_db),
             calibration: Calibration::load(),
             run_since: now_seconds(),
             errors: HashMap::new(),
@@ -345,7 +357,23 @@ impl Engine {
             }
         }
 
+        // 会话板读的是 Codex 自己的会话库，跟选了哪个数据源无关，一直收。
+        // 它自己限流到一秒一次，这里每次 tick 喊一声就行
+        let result = self.threads.poll(now);
+        match result {
+            Ok(()) => self.note("threads", None),
+            Err(err) => self.note("threads", Some(err)),
+        }
+
         self.learn(now);
+    }
+
+    /// 会话板：每个会话一行的实时消耗。命令直接读这份缓存，不碰数据库
+    pub fn board(&self) -> Board {
+        Board {
+            rows: self.threads.rows(),
+            error: self.errors.get("threads").cloned(),
+        }
     }
 
     /// 自动标定：拿 ccswitch 记下的真实 output_tokens，
