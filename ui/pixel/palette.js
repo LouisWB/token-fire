@@ -1,35 +1,50 @@
 // 像素篝火调色板 —— 颜色集中在这里，方便整体换色
+// 走的是"秘法篝火"路线：外焰紫罗兰，火心转金白，石阵刻着冰蓝符文
 export const PALETTE = {
-  // 火焰：由外到内逐层升温
-  flame0: "#93210a",
-  flame1: "#d13f08",
-  flame2: "#f4700c",
-  flame3: "#ffa21a",
-  flame4: "#ffcb45",
-  flame5: "#fff0a6",
-  flame6: "#fffdf2",
+  // 奥术火焰：由外到内逐层升温（紫 → 品红 → 金 → 白）
+  flame0: "#3a1a5e",
+  flame1: "#6a2aa8",
+  flame2: "#a63ad6",
+  flame3: "#e062c8",
+  flame4: "#ff9f5a",
+  flame5: "#ffd27a",
+  flame6: "#fff6dc",
 
-  // 木柴：a 最暗 -> f 最亮
-  bark: "#1f1108",
-  wood0: "#3a2112",
-  wood1: "#5b3517",
-  wood2: "#7d4a20",
-  wood3: "#a2672f",
-  wood4: "#c68c4e",
+  // 古木：做旧的深色木梁
+  bark: "#18110c",
+  wood0: "#2e2118",
+  wood1: "#463322",
+  wood2: "#5e452c",
+  wood3: "#7a5a39",
+  wood4: "#96764c",
 
-  // 余烬
-  ember0: "#8a1d02",
-  ember1: "#d43a03",
+  // 余烬：炉膛里剩下的暖色
+  ember0: "#7a2a10",
+  ember1: "#c34a08",
   ember2: "#ff7a12",
   ember3: "#ffb43c",
   ember4: "#ffe085",
 
-  // 灰堆 / 地面
-  ash0: "#24242b",
-  ash1: "#33333c",
-  ash2: "#45454f",
-  ash3: "#57575f",
-  ground: "rgba(6,5,10,0.45)",
+  // 石阵：立石与围炉的石头
+  stone0: "#12131b",
+  stone1: "#20222f",
+  stone2: "#313444",
+  stone3: "#474c60",
+  stone4: "#646a80",
+
+  // 符文：刻在石头上和木梁上的魔法纹样
+  rune0: "#4de0ff",
+  rune1: "#a06bff",
+  rune2: "#e9f6ff",
+
+  // 苔藓
+  moss0: "#223a2c",
+  moss1: "#31513a",
+
+  // 圈内地面
+  ash0: "#1a1a24",
+  ash1: "#242634",
+  ground: "rgba(6,5,12,0.5)",
 };
 
 // 火焰色阶，索引即热度 0..6
@@ -45,5 +60,3 @@ export const FLAME_RAMP = [
 
 // 余烬色阶，索引即热度 0..4
 export const EMBER_RAMP = ["ember0", "ember1", "ember2", "ember3", "ember4"];
-
-

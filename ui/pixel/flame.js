@@ -94,6 +94,18 @@ function tongueSpecs(intensity, rand) {
     });
   }
 
+  // 飘在主火舌上方的火灵：脱离本体，悬在半空
+  if (it > 0.3) {
+    const k = (it - 0.3) / 0.7;
+    const gap = Math.round(2 + 4 * k);
+    specs.push({
+      cx: CENTER_X + jitter(3.5),
+      tipY: BASE_Y - Math.round(height) - gap - Math.round(2 + 3 * k),
+      baseY: BASE_Y - Math.round(height) - gap,
+      baseW: 1.4 + 1.8 * k,
+    });
+  }
+
   return specs;
 }
 

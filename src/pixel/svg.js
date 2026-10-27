@@ -34,7 +34,8 @@ export function sparksToSvg({ intensity, seed = 1, originX = 22, originY = 28 })
     const rise = 10 + 20 * it + rand() * 6;
     const drift = (rand() - 0.5) * 14;
     const hot = rand();
-    const color = hot > 0.65 ? PALETTE.flame5 : hot > 0.3 ? PALETTE.flame4 : PALETTE.flame3;
+    // 魔法余烬：多数是冷色符文光，少量是金色炉灰
+    const color = hot > 0.74 ? PALETTE.rune2 : hot > 0.52 ? PALETTE.rune0 : hot > 0.3 ? PALETTE.flame4 : PALETTE.rune1;
 
     parts.push(
       `<g transform="translate(${sx.toFixed(2)} ${sy.toFixed(2)})">` +

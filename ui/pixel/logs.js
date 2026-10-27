@@ -30,6 +30,20 @@ function crossSection(base) {
   return CROSS_OFFSET.map((off) => RAMP[Math.min(RAMP.length - 1, Math.max(0, base + off))]);
 }
 
+// 刻在古木上的符文：只落在柴堆外侧，火苗盖住的部分不画
+const RUNE_CARVINGS = [
+  { x: 14, y: 28, color: "rune0" },
+  { x: 29, y: 28, color: "rune1" },
+  { x: 12, y: 30, color: "rune1" },
+  { x: 31, y: 30, color: "rune2" },
+  { x: 16, y: 32, color: "rune0" },
+  { x: 27, y: 32, color: "rune1" },
+  { x: 9, y: 34, color: "rune2" },
+  { x: 34, y: 34, color: "rune0" },
+  { x: 15, y: 27, color: "rune0" },
+  { x: 28, y: 27, color: "rune1" },
+];
+
 export function drawLogs(grid) {
   for (const { y, base, left } of LOG_ROWS) {
     const keys = crossSection(base);
@@ -45,5 +59,9 @@ export function drawLogs(grid) {
         grid.cells[y * grid.w + x] = keys[x - x0];
       }
     }
+
+  for (const rune of RUNE_CARVINGS) {
+    grid.cells[rune.y * grid.w + rune.x] = rune.color;
+  }
   }
 }

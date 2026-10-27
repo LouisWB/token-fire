@@ -10,7 +10,7 @@ const RENDER_MIN_MS = 55;
 const GLIDE_MS = 170;    // 火势趋近的时间常数
 const BALANCE_MIN = 10;
 const BALANCE_MAX = 50;
-const MIN_INTENSITY = 0.04;
+const MIN_INTENSITY = 0.08;
 
 export function formatTokenCount(tokens) {
   const n = Math.max(0, Number(tokens) || 0);
