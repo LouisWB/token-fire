@@ -37,6 +37,11 @@ function balanceToIntensity(balance) {
   return MIN_INTENSITY + ((value - BALANCE_MIN) / (BALANCE_MAX - BALANCE_MIN)) * (1 - MIN_INTENSITY);
 }
 
+// 与帧率无关的指数趋近，火势变化才顺滑
+function approach(current, target, factor) {
+  return current + (target - current) * Math.max(0, Math.min(1, factor));
+}
+
 export class FireView {
   constructor({ scene, staticLayer, sparks, rateEl, unitEl, glowEl, seed = 7 }) {
     this.scene = scene;

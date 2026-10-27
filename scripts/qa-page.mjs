@@ -49,7 +49,7 @@ const DEEPSEEK = {
   todayTokens: 128430,
   yesterdayTokens: 96210,
   monthTokens: 2749300,
-  balance: 14,
+  balance: Number(process.env.QA_BALANCE || 14),
   currency: "CNY",
   updatedAt: Date.now(),
   account: "DeepSeek ID 10001",
