@@ -3,6 +3,7 @@ import { FireView } from "./fire-view.js";
 
 const POLL_MS = 1200;
 const invoke = window.__TAURI__?.core?.invoke ?? null;
+const listen = window.__TAURI__?.event?.listen ?? null;
 
 const alertEl = document.getElementById("alert");
 const ornament = document.getElementById("ornament");
@@ -87,6 +88,13 @@ alertEl.addEventListener("mousedown", (event) => {
 
 async function boot() {
   fire.mount();
+  if (listen) {
+    await listen("deepseek-changed", (event) => {
+      const view = event.payload;
+      fire.setUsage(view?.loggedIn ? view.todayTokens : 0);
+      renderAlert(view);
+    });
+  }
   await poll();
   setInterval(poll, POLL_MS);
   fire.start();

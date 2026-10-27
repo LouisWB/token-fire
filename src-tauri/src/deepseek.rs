@@ -3,12 +3,12 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::time::{Duration, Instant};
-use tauri::{AppHandle, Manager, WebviewWindow};
+use tauri::{AppHandle, Emitter, Manager, WebviewWindow};
 
 const LOGIN_URL: &str = "https://platform.deepseek.com/sign_in";
 const USAGE_URL: &str = "https://platform.deepseek.com/usage";
 const SYNC_TIMEOUT: Duration = Duration::from_secs(15);
-const PROBE_INTERVAL: Duration = Duration::from_millis(900);
+const PROBE_INTERVAL: Duration = Duration::from_millis(400);
 const LOGGED_IN_INTERVAL: Duration = Duration::from_secs(60);
 const LOGGED_OUT_INTERVAL: Duration = Duration::from_secs(8);
 
@@ -99,6 +99,17 @@ impl State {
             return Work::Start;
         }
 
+        // 登录页会在客户端直接写入 Token，不一定会触发整页刷新。
+        // 未登录时持续读取页面内的同步结果，登录成功即可立刻更新状态。
+        if !self.view.logged_in
+            && self
+                .last_probe
+                .map_or(true, |at| now.duration_since(at) >= PROBE_INTERVAL)
+        {
+            self.last_probe = Some(now);
+            return Work::Probe;
+        }
+
         Work::None
     }
 
@@ -114,12 +125,16 @@ impl State {
     }
 
     pub fn apply(&mut self, value: &Value) {
-        self.in_flight = false;
+        let syncing = value
+            .get("syncing")
+            .and_then(Value::as_bool)
+            .unwrap_or(false);
+        self.in_flight = syncing;
         self.view.logged_in = value
             .get("loggedIn")
             .and_then(Value::as_bool)
             .unwrap_or(false);
-        self.view.syncing = false;
+        self.view.syncing = syncing;
         self.view.today_tokens = number(value, "todayTokens");
         self.view.yesterday_tokens = number(value, "yesterdayTokens");
         self.view.month_tokens = number(value, "monthTokens");
@@ -175,6 +190,10 @@ pub fn open(app: &AppHandle, logged_in: bool) -> Result<(), String> {
 }
 
 pub fn start(app: &AppHandle) {
+    start_after(app, Duration::from_millis(500));
+}
+
+fn start_after(app: &AppHandle, delay: Duration) {
     if let Err(err) = ensure_window(app) {
         if let Some(state) = app.try_state::<crate::AppState>() {
             state.deepseek.lock().unwrap().fail(err);
@@ -184,7 +203,8 @@ pub fn start(app: &AppHandle) {
 
     let handle = app.clone();
     std::thread::spawn(move || {
-        std::thread::sleep(Duration::from_millis(500));
+        std::thread::sleep(delay);
+        let mut navigated = false;
         if let Some(window) = handle.get_webview_window("deepseek") {
             let needs_navigation = window
                 .url()
@@ -196,10 +216,15 @@ pub fn start(app: &AppHandle) {
                 .unwrap_or(true);
             if needs_navigation {
                 let _ = window.eval("location.replace('https://platform.deepseek.com/usage')");
+                navigated = true;
             }
         }
         // 新窗口需要一点时间完成首次页面加载，再注入官方页面内的同步脚本。
-        std::thread::sleep(Duration::from_millis(1200));
+        std::thread::sleep(if navigated {
+            Duration::from_millis(900)
+        } else {
+            Duration::from_millis(50)
+        });
         if let Some(window) = handle.get_webview_window("deepseek") {
             if let Err(err) = window.eval(SYNC_SCRIPT) {
                 if let Some(state) = handle.try_state::<crate::AppState>() {
@@ -224,7 +249,12 @@ pub fn probe(app: &AppHandle) {
         move |raw| {
             if let Some(value) = decode_result(&raw) {
                 if let Some(state) = handle.try_state::<crate::AppState>() {
-                    state.deepseek.lock().unwrap().apply(&value);
+                    let view = {
+                        let mut ds = state.deepseek.lock().unwrap();
+                        ds.apply(&value);
+                        ds.view.clone()
+                    };
+                    let _ = handle.emit("deepseek-changed", view);
                 }
             }
         },
@@ -279,7 +309,7 @@ const SYNC_SCRIPT: &str = r#"
     return tokens;
   };
 
-  (async () => {
+  const runSync = async () => {
     try {
       const token = storedValue("userToken");
       if (typeof token !== "string" || !token) {
@@ -289,6 +319,14 @@ const SYNC_SCRIPT: &str = r#"
         };
         return;
       }
+
+      window.__tokenFireSync = {
+        ...window.__tokenFireSync,
+        loggedIn: true,
+        syncing: true,
+        updatedAt: Date.now(),
+        message: "正在同步 DeepSeek 用量…",
+      };
 
       const now = Math.floor(Date.now() / 1000);
       const tz = -new Date().getTimezoneOffset() * 60;
@@ -351,6 +389,18 @@ const SYNC_SCRIPT: &str = r#"
         error: error instanceof Error ? error.message : String(error),
       };
     }
-  })();
+  };
+
+  runSync();
+  if (!window.__tokenFireWatch) {
+    let seenToken = storedValue("userToken") || "";
+    window.__tokenFireWatch = setInterval(() => {
+      const nextToken = storedValue("userToken") || "";
+      if (nextToken !== seenToken) {
+        seenToken = nextToken;
+        runSync();
+      }
+    }, 300);
+  }
 })();
 "#;

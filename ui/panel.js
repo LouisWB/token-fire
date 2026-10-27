@@ -1,8 +1,9 @@
 // 设置面板：自己一个窗口，管理 DeepSeek 登录、用量和摆件设置
 import { FireView, formatTokenCount } from "./fire-view.js";
 
-const POLL_MS = 1200;
+const POLL_MS = 500;
 const invoke = window.__TAURI__?.core?.invoke ?? null;
+const listen = window.__TAURI__?.event?.listen ?? null;
 
 const els = {
   accountState: document.getElementById("account-state"),
@@ -183,6 +184,9 @@ window.addEventListener("focus", poll);
 
 async function boot() {
   fire.mount();
+  if (listen) {
+    await listen("deepseek-changed", (event) => renderUsage(event.payload));
+  }
 
   if (invoke) {
     try {
