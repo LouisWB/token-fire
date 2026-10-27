@@ -20,6 +20,8 @@ pub struct View {
     pub today_tokens: f64,
     pub yesterday_tokens: f64,
     pub month_tokens: f64,
+    pub balance: f64,
+    pub currency: String,
     pub updated_at: Option<i64>,
     pub account: String,
     pub message: String,
@@ -34,6 +36,8 @@ impl Default for View {
             today_tokens: 0.0,
             yesterday_tokens: 0.0,
             month_tokens: 0.0,
+            balance: 0.0,
+            currency: "CNY".to_string(),
             updated_at: None,
             account: String::new(),
             message: "请登录 DeepSeek".to_string(),
@@ -138,6 +142,12 @@ impl State {
         self.view.today_tokens = number(value, "todayTokens");
         self.view.yesterday_tokens = number(value, "yesterdayTokens");
         self.view.month_tokens = number(value, "monthTokens");
+        self.view.balance = number(value, "balance");
+        self.view.currency = value
+            .get("currency")
+            .and_then(Value::as_str)
+            .unwrap_or("CNY")
+            .to_string();
         self.view.updated_at = value.get("updatedAt").and_then(Value::as_i64);
         self.view.account = value
             .get("account")
@@ -279,6 +289,8 @@ const SYNC_SCRIPT: &str = r#"
     todayTokens: 0,
     yesterdayTokens: 0,
     monthTokens: 0,
+    balance: 0,
+    currency: "CNY",
     updatedAt: null,
     account: "",
     message: "正在读取 DeepSeek…",
@@ -337,6 +349,7 @@ const SYNC_SCRIPT: &str = r#"
       const dayStart = Date.UTC(year, month, day) / 1000 - tz;
       const yesterdayStart = dayStart - 86400;
       const monthStart = Date.UTC(year, month, 1) / 1000 - tz;
+      const tomorrowStart = dayStart + 86400;
       const deviceId = localStorage.getItem("deepseek-device-id:platform") || "";
       const headers = {
         accept: "application/json",
@@ -362,10 +375,35 @@ const SYNC_SCRIPT: &str = r#"
         return sumSeries(payload && payload.data && payload.data.biz_data);
       };
 
-      const [todayTokens, yesterdayTokens, monthTokens] = await Promise.all([
-        amount(dayStart, now),
+      const summary = async () => {
+        const response = await fetch("/api/v0/users/get_user_summary", {
+          method: "GET",
+          credentials: "include",
+          cache: "no-store",
+          headers,
+        });
+        const payload = await response.json();
+        if (payload && payload.code !== 0) {
+          const error = new Error(payload.msg || "DeepSeek 余额读取失败");
+          error.code = payload.code;
+          throw error;
+        }
+        const biz = payload && payload.data && payload.data.biz_data;
+        const wallets = [...(biz.normal_wallets || []), ...(biz.bonus_wallets || [])];
+        const wallet = wallets.find((item) => item.currency === "CNY") || wallets[0];
+        if (!wallet) return { balance: 0, currency: "CNY" };
+        const currency = wallet.currency || "CNY";
+        const balance = wallets
+          .filter((item) => (item.currency || "CNY") === currency)
+          .reduce((total, item) => total + (Number(item.balance) || 0), 0);
+        return { balance, currency };
+      };
+
+      const [todayTokens, yesterdayTokens, monthTokens, wallet] = await Promise.all([
+        amount(dayStart, tomorrowStart),
         amount(yesterdayStart, dayStart),
-        amount(monthStart, now),
+        amount(monthStart, tomorrowStart),
+        summary(),
       ]);
       const user = storedValue("__appKit_userInfo");
       const id = user && typeof user === "object" ? user.id : null;
@@ -374,6 +412,8 @@ const SYNC_SCRIPT: &str = r#"
         todayTokens,
         yesterdayTokens,
         monthTokens,
+        balance: wallet.balance,
+        currency: wallet.currency,
         updatedAt: Date.now(),
         account: id ? "DeepSeek ID " + id : "已连接 DeepSeek",
         message: "已连接 DeepSeek",

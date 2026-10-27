@@ -1,4 +1,4 @@
-// 摆件窗口：只显示篝火和今天从 DeepSeek 读取到的 Token 用量
+// 摆件窗口：只显示篝火和 DeepSeek 账户余额
 import { FireView } from "./fire-view.js";
 
 const POLL_MS = 1200;
@@ -52,7 +52,7 @@ async function poll() {
   polling = true;
   try {
     const view = await invoke("deepseek_status");
-    fire.setUsage(view?.loggedIn ? view.todayTokens : 0);
+    fire.setBalance(view?.loggedIn ? view.balance : null, view?.currency);
     renderAlert(view);
   } catch (err) {
     fire.fade();
@@ -91,7 +91,7 @@ async function boot() {
   if (listen) {
     await listen("deepseek-changed", (event) => {
       const view = event.payload;
-      fire.setUsage(view?.loggedIn ? view.todayTokens : 0);
+      fire.setBalance(view?.loggedIn ? view.balance : null, view?.currency);
       renderAlert(view);
     });
   }

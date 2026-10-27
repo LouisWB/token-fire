@@ -133,6 +133,12 @@
   box-shadow: 0 0 6px rgba(98, 200, 117, 0.7);
 }
 
+.balance-inline {
+  color: #ffc86a;
+  font-size: 10.5px;
+  font-variant-numeric: tabular-nums;
+}
+
 .account-actions {
   display: flex;
   gap: 6px;

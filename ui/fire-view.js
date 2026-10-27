@@ -8,8 +8,9 @@ const QUANT = 30;        // 火势量化成多少档
 const STATIC_QUANT = 8;  // 炭火变化很慢，单独粗量化，省点重绘
 const RENDER_MIN_MS = 55;
 const GLIDE_MS = 170;    // 火势趋近的时间常数
-const TOKEN_QUIET = 1000;
-const TOKEN_FULL = 5000000;
+const BALANCE_MIN = 10;
+const BALANCE_MAX = 50;
+const MIN_INTENSITY = 0.04;
 
 export function formatTokenCount(tokens) {
   const n = Math.max(0, Number(tokens) || 0);
@@ -22,12 +23,18 @@ export function formatTokenCount(tokens) {
   return (value < 100 ? value.toFixed(1) : Math.round(value)) + "M";
 }
 
-function usageToIntensity(tokens) {
-  const n = Math.max(0, Number(tokens) || 0);
-  if (n <= 0) return 0;
-  const span = Math.log(TOKEN_FULL / TOKEN_QUIET);
-  const level = Math.log(Math.max(n, TOKEN_QUIET) / TOKEN_QUIET) / span;
-  return Math.min(1, 0.04 + level * 0.96);
+export function formatBalance(balance, currency = "CNY") {
+  if (balance === null || balance === undefined) return "--";
+  const value = Number(balance);
+  if (!Number.isFinite(value)) return "--";
+  return (currency === "USD" ? "$" : "¥") + value.toFixed(2);
+}
+
+function balanceToIntensity(balance) {
+  const value = Math.max(0, Number(balance) || 0);
+  if (value <= BALANCE_MIN) return MIN_INTENSITY;
+  if (value >= BALANCE_MAX) return 1;
+  return MIN_INTENSITY + ((value - BALANCE_MIN) / (BALANCE_MAX - BALANCE_MIN)) * (1 - MIN_INTENSITY);
 }
 
 export class FireView {
@@ -60,11 +67,12 @@ export class FireView {
     this.paint(0, true);
   }
 
-  /* 收到今日用量：定下目标火势，顺手更新读数 */
-  setUsage(tokens) {
-    this.target = usageToIntensity(tokens);
-    if (this.rateEl) this.rateEl.textContent = formatTokenCount(tokens);
-    if (this.unitEl) this.unitEl.textContent = "tokens";
+  /* 余额低于 10 元保持最小火，达到 50 元时为满火 */
+  setBalance(balance, currency = "CNY") {
+    const available = balance !== null && balance !== undefined && Number.isFinite(Number(balance));
+    this.target = available ? balanceToIntensity(balance) : 0;
+    if (this.rateEl) this.rateEl.textContent = formatBalance(balance, currency);
+    if (this.unitEl) this.unitEl.textContent = currency;
   }
 
   /* 读不到数据时让火慢慢熄掉，别一直烧着假火 */

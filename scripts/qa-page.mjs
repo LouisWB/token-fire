@@ -49,6 +49,8 @@ const DEEPSEEK = {
   todayTokens: 128430,
   yesterdayTokens: 96210,
   monthTokens: 2749300,
+  balance: 14,
+  currency: "CNY",
   updatedAt: Date.now(),
   account: "DeepSeek ID 10001",
   message: "已连接 DeepSeek",
