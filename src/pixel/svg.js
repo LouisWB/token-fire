@@ -17,9 +17,9 @@ export function runsToSvg(grid) {
 }
 
 // 往上飘的火星，数量和高低都跟着强度走
-export function sparksToSvg({ intensity, seed = 1, originX = 22, originY = 28 }) {
+export function sparksToSvg({ intensity, seed = 1, originX = 22, originY = 25 }) {
   const it = Math.max(0, Math.min(1, intensity));
-  const count = Math.round(it * 12);
+  const count = Math.round(it * 10);
   if (count <= 0) return "";
 
   const rand = mulberry32(seed * 31337 + 11);
@@ -28,7 +28,7 @@ export function sparksToSvg({ intensity, seed = 1, originX = 22, originY = 28 })
   for (let i = 0; i < count; i++) {
     const life = 1.8 + rand() * 1.6;
     const begin = -(rand() * life).toFixed(2);
-    const sx = originX + (rand() - 0.5) * (7 + 8 * it);
+    const sx = originX + (rand() - 0.5) * (6 + 6 * it);
     const sy = originY + (rand() - 0.5) * 4;
     // 上升高度压在裁切范围内，飘到顶时正好淡出
     const rise = 10 + 20 * it + rand() * 6;

@@ -2,7 +2,7 @@ import { createGrid, put } from "./grid.js";
 import { FLAME_RAMP } from "./palette.js";
 
 // 火焰根部所在行：火从这一行往上长
-export const BASE_Y = 33;
+export const BASE_Y = 30;
 // 画面水平中心线
 export const CENTER_X = 22;
 
@@ -51,60 +51,31 @@ function tongueSpecs(intensity, rand) {
   const jitter = (amp) => (rand() - 0.5) * amp;
 
   // 高矮差拉大：快灭的时候只剩一小撮，烧旺了能顶到画面顶部
-  const height = (6.5 + 25 * it) * (0.86 + 0.28 * rand());
+  const height = (6.5 + 21 * it) * (0.86 + 0.28 * rand());
   const specs = [];
 
   // 主火舌：火苗主体，每帧高度和左右位置都飘一点
   specs.push({
-    cx: CENTER_X + jitter(2.4),
+    cx: CENTER_X + jitter(1.8),
     tipY: BASE_Y - Math.round(height),
     baseY: BASE_Y,
-    baseW: (6.5 + 12 * it) * (0.9 + 0.2 * rand()),
+    baseW: (5.5 + 7.5 * it) * (0.9 + 0.2 * rand()),
   });
 
   // 两根副火舌，只长到主火舌一半高，贴着主体形成锯齿顶
-  const side = 3 + 2.6 * it;
+  const side = 3.2 + 2.2 * it;
   specs.push({
-    cx: CENTER_X - side + jitter(3),
-    tipY: BASE_Y - Math.round(height * (0.30 + 0.26 * rand())),
+    cx: CENTER_X - side + jitter(2.2),
+    tipY: BASE_Y - Math.round(height * (0.30 + 0.24 * rand())),
     baseY: BASE_Y,
-    baseW: 2.2 + 3.6 * it,
+    baseW: 2 + 2.6 * it,
   });
   specs.push({
-    cx: CENTER_X + side + jitter(3),
-    tipY: BASE_Y - Math.round(height * (0.26 + 0.26 * rand())),
+    cx: CENTER_X + side + jitter(2.2),
+    tipY: BASE_Y - Math.round(height * (0.26 + 0.24 * rand())),
     baseY: BASE_Y,
-    baseW: 2.2 + 3.6 * it,
+    baseW: 2 + 2.6 * it,
   });
-
-  // 更外侧的小火苗，只有烧旺了才冒头
-  if (it > 0.5) {
-    const k = clamp01((it - 0.5) / 0.5);
-    specs.push({
-      cx: CENTER_X - (7 + 3.5 * it) + jitter(2.4),
-      tipY: BASE_Y - Math.round(height * (0.12 + 0.24 * rand())),
-      baseY: BASE_Y,
-      baseW: 1.8 + 3 * k,
-    });
-    specs.push({
-      cx: CENTER_X + (7 + 3.5 * it) + jitter(2.4),
-      tipY: BASE_Y - Math.round(height * (0.10 + 0.24 * rand())),
-      baseY: BASE_Y,
-      baseW: 1.8 + 3 * k,
-    });
-  }
-
-  // 飘在主火舌上方的火灵：脱离本体，悬在半空
-  if (it > 0.3) {
-    const k = (it - 0.3) / 0.7;
-    const gap = Math.round(2 + 4 * k);
-    specs.push({
-      cx: CENTER_X + jitter(3.5),
-      tipY: BASE_Y - Math.round(height) - gap - Math.round(2 + 3 * k),
-      baseY: BASE_Y - Math.round(height) - gap,
-      baseW: 1.4 + 1.8 * k,
-    });
-  }
 
   return specs;
 }
