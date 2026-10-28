@@ -26,6 +26,68 @@
   overflow: visible;
 }
 
+/* 篝火底座：做成上宽下窄的火盆，金额放在盆身中间 */
+#base {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 64%;
+  height: 40px;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+/* 盆口：比盆身宽一圈，顶面留一道高光 */
+#base::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 15%;
+  background: linear-gradient(180deg, #6c6488 0 33%, #4b4260 33% 100%);
+  clip-path: polygon(0 0, 100% 0, 100% 68%, 94% 68%, 94% 100%, 6% 100%, 6% 68%, 0 68%);
+}
+
+/* 盆身：三级收口，底部窄一圈；暖光提亮金额周围 */
+#base::after {
+  content: "";
+  position: absolute;
+  left: 3%;
+  top: 12.5%;
+  width: 94%;
+  height: 87.5%;
+  background:
+    radial-gradient(
+      ellipse at 50% 32%,
+      rgba(255, 176, 96, 0.18),
+      rgba(176, 104, 255, 0.1) 48%,
+      transparent 74%
+    ),
+    linear-gradient(180deg, #3b3149 0 18%, #31283f 18% 45%, #271f33 45% 66%, #1d1825 66% 100%);
+  clip-path: polygon(
+    0 0,
+    100% 0,
+    100% 12%,
+    95% 12%,
+    95% 38%,
+    90% 38%,
+    90% 64%,
+    85% 64%,
+    85% 100%,
+    15% 100%,
+    15% 64%,
+    10% 64%,
+    10% 38%,
+    5% 38%,
+    5% 12%,
+    0 12%
+  );
+  box-shadow:
+    inset 0 2px 4px rgba(0, 0, 0, 0.35),
+    inset 0 -4px 8px rgba(0, 0, 0, 0.42);
+}
+
 /* 火堆背后那层暖光，火越旺越亮 */
 #glow {
   position: absolute;
@@ -52,7 +114,7 @@
 #readout {
   position: absolute;
   left: 50%;
-  bottom: 20px;
+  bottom: 12px;
   transform: translateX(-50%);
   padding: 0;
   background: none;
@@ -150,8 +212,11 @@
 
 /* 小号摆件空间太窄，只留数字 */
 @media (max-width: 132px) {
+  #base {
+    height: 26px;
+  }
   #readout {
-    bottom: 1px;
+    bottom: 6px;
     font-size: 10px;
     letter-spacing: 0.2px;
   }
