@@ -45,11 +45,40 @@
         <span id="balance" class="balance-inline">余额 --</span>
       </div>
       <div class="usage-grid">
-        <div><span>今日</span><b id="today">—</b></div>
-        <div><span>昨日</span><b id="yesterday">—</b></div>
-        <div><span>本月</span><b id="month">—</b></div>
+        <div><span>今日</span><b id="today">—</b><i id="today-cost">—</i></div>
+        <div><span>昨日</span><b id="yesterday">—</b><i id="yesterday-cost">—</i></div>
+        <div><span>本月</span><b id="month">—</b><i id="month-cost">—</i></div>
       </div>
       <p id="usage-hint" class="hint">数据约延迟 5 分钟</p>
+    </div>
+
+    <div class="group">
+      <div class="group-head">
+        <h2>消费趋势</h2>
+        <div id="cost-tabs" class="cost-tabs">
+          <button type="button" data-range="today" class="on">本日</button>
+          <button type="button" data-range="week">本周</button>
+          <button type="button" data-range="month">本月</button>
+          <button type="button" data-range="year">本年</button>
+        </div>
+      </div>
+      <div class="cost-figure">
+        <b id="cost-total">—</b>
+        <span id="cost-peak"></span>
+      </div>
+      <div class="cost-chart-wrap">
+        <svg id="cost-chart" viewBox="0 0 270 76" preserveAspectRatio="none" aria-label="消费趋势折线图"></svg>
+        <div id="cost-tip" class="cost-tip" hidden>
+          <span id="cost-tip-time" class="cost-tip-time"></span>
+          <span class="cost-tip-row"><em>Token</em><b id="cost-tip-tokens"></b></span>
+          <span class="cost-tip-row"><em>消费</em><b id="cost-tip-cost"></b></span>
+        </div>
+      </div>
+      <div class="cost-axis">
+        <span id="cost-axis-start"></span>
+        <span id="cost-axis-mid"></span>
+        <span id="cost-axis-end"></span>
+      </div>
     </div>
 
     <div class="group">

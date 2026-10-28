@@ -12,7 +12,7 @@ const CRLF = String.fromCharCode(13) + LF;
 
 const PAGE = process.env.QA_PAGE || "panel";
 const LOCK_W = Number(process.env.QA_W || 300);
-const LOCK_H = Number(process.env.QA_H || 580);
+const LOCK_H = Number(process.env.QA_H || 766);
 const SHOT = process.env.QA_SHOT || PAGE + ".png";
 const MEASURE = !!process.env.QA_MEASURE;
 const SCRIPT = PAGE === "index" ? "widget.js" : PAGE + ".js";
@@ -57,7 +57,38 @@ const DEEPSEEK = {
   error: null,
 };
 
+const dayLabel = (offset) => {
+  const date = new Date(2026, 9, 28 - offset);
+  return date.getFullYear() + "-" + String(date.getMonth() + 1).padStart(2, "0") + "-" + String(date.getDate()).padStart(2, "0");
+};
+const wave = (index, length, peak) => Math.round((peak * (0.35 + 0.65 * Math.abs(Math.sin((index / length) * Math.PI * 2.4)))) * 100) / 100;
+
+DEEPSEEK.costToday = 3.42;
+DEEPSEEK.costYesterday = 2.18;
+DEEPSEEK.costWeek = 18.76;
+DEEPSEEK.costMonth = 64.28;
+DEEPSEEK.costYear = 512.9;
+DEEPSEEK.trends = {
+  today: Array.from({ length: 24 }, (_, i) => ({
+    label: String(i).padStart(2, "0") + ":00",
+    value: i < 7 ? 0 : wave(i - 7, 17, 0.46),
+  })),
+  week: [2.4, 1.8, 3.1, 0.9, 4.2, 2.7, 3.4].map((value, i) => ({ label: dayLabel(6 - i), value })),
+  month: Array.from({ length: 28 }, (_, i) => ({ label: dayLabel(27 - i), value: wave(i, 28, 4.8) })),
+  year: Array.from({ length: 12 }, (_, i) => ({
+    label: "2026-" + String(i + 1).padStart(2, "0"),
+    value: wave(i, 12, 72),
+  })),
+};
+for (const key of Object.keys(DEEPSEEK.trends)) {
+  DEEPSEEK.trends[key] = DEEPSEEK.trends[key].map((point) => ({
+    ...point,
+    tokens: Math.round(point.value * 6400000),
+  }));
+}
+
 const STUB = [
+  "try { localStorage.setItem('token-fire:cost-range', COST_RANGE); } catch (e) {}",
   "window.__TAURI__ = {",
   "  core: {",
   "    invoke: async (cmd) => {",
@@ -71,23 +102,32 @@ const STUB = [
 ]
   .join(LF)
   .replace("CONFIG", JSON.stringify(CONFIG))
+  .replace("COST_RANGE", JSON.stringify(process.env.QA_COST_RANGE || "today"))
   .replace("DEEPSEEK", JSON.stringify(DEEPSEEK));
 
 const LOCK = [
   "<style>",
   "html, body { width: " + LOCK_W + "px !important; height: " + LOCK_H + "px !important; }",
   MEASURE ? "#panel { height: auto !important; }" : "",
-  "html { background: rgba(70, 74, 92, 0.55); }",
+  "html { background: " + (process.env.QA_BG || "rgba(70, 74, 92, 0.55)") + "; }",
   "</style>",
 ].join(LF);
 
 const source = readFileSync(resolve(root, "web/" + PAGE + ".html"), "utf8").split(CRLF).join(LF);
 const html = source
-  .replace("<head>", "<head>" + LF + LOCK)
+  .replace("</head>", LOCK + LF + "</head>")
   .replace(
     '<script type="module" src="' + SCRIPT + '"></script>',
     "<script>" + LF + STUB + LF + "</script>" + LF +
       "<script>" + LF + flatten(MODULES) + LF + flatten(["web/" + SCRIPT]) + LF + "</script>" +
+      (process.env.QA_HOVER
+        ? LF +
+          "<script>setTimeout(function () {" +
+          "var s = document.getElementById('cost-chart'); if (!s) return;" +
+          "var r = s.getBoundingClientRect();" +
+          "s.dispatchEvent(new PointerEvent('pointermove', { clientX: r.left + r.width * 0.62, clientY: r.top + 30, bubbles: true }));" +
+          "}, 1200);</script>"
+        : "") +
       (MEASURE
         ? LF +
           "<script>setTimeout(function () {" +

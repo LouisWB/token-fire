@@ -20,6 +20,13 @@ pub struct View {
     pub today_tokens: f64,
     pub yesterday_tokens: f64,
     pub month_tokens: f64,
+    pub cost_today: f64,
+    pub cost_yesterday: f64,
+    pub cost_week: f64,
+    pub cost_month: f64,
+    pub cost_year: f64,
+    pub cost_error: bool,
+    pub trends: Trends,
     pub balance: f64,
     pub currency: String,
     pub updated_at: Option<i64>,
@@ -36,6 +43,13 @@ impl Default for View {
             today_tokens: 0.0,
             yesterday_tokens: 0.0,
             month_tokens: 0.0,
+            cost_today: 0.0,
+            cost_yesterday: 0.0,
+            cost_week: 0.0,
+            cost_month: 0.0,
+            cost_year: 0.0,
+            cost_error: false,
+            trends: Trends::default(),
             balance: 0.0,
             currency: "CNY".to_string(),
             updated_at: None,
@@ -44,6 +58,23 @@ impl Default for View {
             error: None,
         }
     }
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(default, rename_all = "camelCase")]
+pub struct TrendPoint {
+    pub label: String,
+    pub value: f64,
+    pub tokens: f64,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(default, rename_all = "camelCase")]
+pub struct Trends {
+    pub today: Vec<TrendPoint>,
+    pub week: Vec<TrendPoint>,
+    pub month: Vec<TrendPoint>,
+    pub year: Vec<TrendPoint>,
 }
 
 #[derive(Default)]
@@ -142,6 +173,18 @@ impl State {
         self.view.today_tokens = number(value, "todayTokens");
         self.view.yesterday_tokens = number(value, "yesterdayTokens");
         self.view.month_tokens = number(value, "monthTokens");
+        self.view.cost_today = number(value, "costToday");
+        self.view.cost_yesterday = number(value, "costYesterday");
+        self.view.cost_week = number(value, "costWeek");
+        self.view.cost_month = number(value, "costMonth");
+        self.view.cost_year = number(value, "costYear");
+        self.view.cost_error = value
+            .get("costError")
+            .and_then(Value::as_bool)
+            .unwrap_or(false);
+        if let Some(trends) = value.get("trends") {
+            self.view.trends = serde_json::from_value(trends.clone()).unwrap_or_default();
+        }
         self.view.balance = number(value, "balance");
         self.view.currency = value
             .get("currency")
@@ -289,6 +332,13 @@ const SYNC_SCRIPT: &str = r#"
     todayTokens: 0,
     yesterdayTokens: 0,
     monthTokens: 0,
+    costToday: 0,
+    costYesterday: 0,
+    costWeek: 0,
+    costMonth: 0,
+    costYear: 0,
+    costError: false,
+    trends: { today: [], week: [], month: [], year: [] },
     balance: 0,
     currency: "CNY",
     updatedAt: null,
@@ -306,19 +356,6 @@ const SYNC_SCRIPT: &str = r#"
     } catch {
       return null;
     }
-  };
-
-  const sumSeries = (data) => {
-    let tokens = 0;
-    for (const series of (data && data.series) || []) {
-      for (const bucket of series.buckets || []) {
-        const usage = bucket.usage || {};
-        tokens += Number(usage.PROMPT_CACHE_HIT_TOKEN) || 0;
-        tokens += Number(usage.PROMPT_CACHE_MISS_TOKEN) || 0;
-        tokens += Number(usage.RESPONSE_TOKEN) || 0;
-      }
-    }
-    return tokens;
   };
 
   const runSync = async () => {
@@ -349,6 +386,8 @@ const SYNC_SCRIPT: &str = r#"
       const dayStart = Date.UTC(year, month, day) / 1000 - tz;
       const yesterdayStart = dayStart - 86400;
       const monthStart = Date.UTC(year, month, 1) / 1000 - tz;
+      const weekStart = dayStart - ((localNow.getUTCDay() + 6) % 7) * 86400;
+      const yearStart = Date.UTC(year, 0, 1) / 1000 - tz;
       const tomorrowStart = dayStart + 86400;
       const deviceId = localStorage.getItem("deepseek-device-id:platform") || "";
       const headers = {
@@ -356,6 +395,17 @@ const SYNC_SCRIPT: &str = r#"
         authorization: "Bearer " + token,
         "x-device-id": deviceId,
         "x-device-model": "",
+      };
+
+      // bucket.time 是秒级时间戳；bucket 是桶宽（秒），小于一天按小时展示
+      const pad2 = (value) => String(value).padStart(2, "0");
+      const timeLabel = (value, hourly) => {
+        const ms = Number(value) * 1000;
+        if (!Number.isFinite(ms) || ms <= 0) return String(value || "");
+        const date = new Date(ms);
+        return hourly
+          ? pad2(date.getHours()) + ":" + pad2(date.getMinutes())
+          : date.getFullYear() + "-" + pad2(date.getMonth() + 1) + "-" + pad2(date.getDate());
       };
 
       const amount = async (start, end) => {
@@ -372,7 +422,28 @@ const SYNC_SCRIPT: &str = r#"
           error.code = payload.code;
           throw error;
         }
-        return sumSeries(payload && payload.data && payload.data.biz_data);
+        const biz = (payload && payload.data && payload.data.biz_data) || {};
+        const step = Number(biz.bucket) || 0;
+        const hourly = step > 0 && step < 86400;
+        const buckets = new Map();
+        for (const series of biz.series || []) {
+          for (const bucket of series.buckets || []) {
+            const usage = bucket.usage || {};
+            const tokens =
+              (Number(usage.PROMPT_CACHE_HIT_TOKEN) || 0) +
+              (Number(usage.PROMPT_CACHE_MISS_TOKEN) || 0) +
+              (Number(usage.RESPONSE_TOKEN) || 0);
+            const label = timeLabel(bucket.time, hourly);
+            buckets.set(label, (buckets.get(label) || 0) + tokens);
+          }
+        }
+        const points = [];
+        let total = 0;
+        buckets.forEach((value, label) => {
+          points.push({ label, value });
+          total += value;
+        });
+        return { total, points };
       };
 
       const summary = async () => {
@@ -399,19 +470,111 @@ const SYNC_SCRIPT: &str = r#"
         return { balance, currency };
       };
 
-      const [todayTokens, yesterdayTokens, monthTokens, wallet] = await Promise.all([
+      // 官方按币种分组返回消费金额，每组内按 API Key / 模型拆成 series。
+      const cost = async (start, end) => {
+        const query = "?start=" + start + "&end=" + end + "&tz=" + tz;
+        const response = await fetch("/api/v0/usage/by_api_key/cost" + query, {
+          method: "GET",
+          credentials: "include",
+          cache: "no-store",
+          headers,
+        });
+        const payload = await response.json();
+        if (payload && payload.code !== 0) {
+          const error = new Error(payload.msg || "DeepSeek 消费金额读取失败");
+          error.code = payload.code;
+          throw error;
+        }
+        const biz = (payload && payload.data && payload.data.biz_data) || {};
+        const groups = biz.data || [];
+        const step = Number(biz.bucket) || 0;
+        const hourly = step > 0 && step < 86400;
+        return groups.map((group) => {
+          const buckets = new Map();
+          for (const series of group.series || []) {
+            for (const bucket of series.buckets || []) {
+              const label = timeLabel(bucket.time, hourly);
+              const value = Number(bucket.cost) || 0;
+              buckets.set(label, (buckets.get(label) || 0) + value);
+            }
+          }
+          const points = [];
+          let total = 0;
+          buckets.forEach((value, label) => {
+            points.push({ label, value });
+            total += value;
+          });
+          return { currency: group.currency || "CNY", total, points };
+        });
+      };
+
+      // 消费接口是官方页面的内部接口，读不到时只降级这一块，别拖垮 Token 和余额
+      let costError = false;
+      const safeCost = async (start, end) => {
+        try {
+          return await cost(start, end);
+        } catch (error) {
+          costError = true;
+          return [];
+        }
+      };
+
+      const pickCost = (groups, currency) => {
+        const list = groups || [];
+        return list.find((item) => item.currency === currency) || list[0] || { total: 0, points: [] };
+      };
+
+      // 金额和 Token 按时间桶对齐，悬停时同一行显示两项
+      const mergeTrend = (tokenPoints, costPoints) => {
+        const merged = new Map();
+        for (const point of tokenPoints || []) {
+          merged.set(point.label, { label: point.label, value: 0, tokens: point.value });
+        }
+        for (const point of costPoints || []) {
+          const current = merged.get(point.label);
+          if (current) current.value += point.value;
+          else merged.set(point.label, { label: point.label, value: point.value, tokens: 0 });
+        }
+        return [...merged.values()].sort((a, b) => (a.label < b.label ? -1 : a.label > b.label ? 1 : 0));
+      };
+
+      const [todayAmount, yesterdayAmount, monthAmount, weekAmount, yearAmount, wallet, todayCost, yesterdayCost, weekCost, monthCost, yearCost] = await Promise.all([
         amount(dayStart, tomorrowStart),
         amount(yesterdayStart, dayStart),
         amount(monthStart, tomorrowStart),
+        amount(weekStart, tomorrowStart),
+        amount(yearStart, tomorrowStart),
         summary(),
+        safeCost(dayStart, tomorrowStart),
+        safeCost(yesterdayStart, dayStart),
+        safeCost(weekStart, tomorrowStart),
+        safeCost(monthStart, tomorrowStart),
+        safeCost(yearStart, tomorrowStart),
       ]);
+      const todayView = pickCost(todayCost, wallet.currency);
+      const yesterdayView = pickCost(yesterdayCost, wallet.currency);
+      const weekView = pickCost(weekCost, wallet.currency);
+      const monthView = pickCost(monthCost, wallet.currency);
+      const yearView = pickCost(yearCost, wallet.currency);
       const user = storedValue("__appKit_userInfo");
       const id = user && typeof user === "object" ? user.id : null;
       window.__tokenFireSync = {
         loggedIn: true,
-        todayTokens,
-        yesterdayTokens,
-        monthTokens,
+        todayTokens: todayAmount.total,
+        yesterdayTokens: yesterdayAmount.total,
+        monthTokens: monthAmount.total,
+        costToday: todayView.total,
+        costYesterday: yesterdayView.total,
+        costWeek: weekView.total,
+        costMonth: monthView.total,
+        costYear: yearView.total,
+        costError,
+        trends: {
+          today: mergeTrend(todayAmount.points, todayView.points),
+          week: mergeTrend(weekAmount.points, weekView.points),
+          month: mergeTrend(monthAmount.points, monthView.points),
+          year: mergeTrend(yearAmount.points, yearView.points),
+        },
         balance: wallet.balance,
         currency: wallet.currency,
         updatedAt: Date.now(),

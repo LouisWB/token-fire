@@ -7,19 +7,20 @@ use std::time::{Duration, Instant};
 use tauri::{AppHandle, Emitter, LogicalSize, Manager, PhysicalPosition, State, WebviewWindow};
 use tauri_plugin_autostart::{MacosLauncher, ManagerExt};
 
-/// 摆件模式下的窗口尺寸，viewBox 是 40x50，所以按 0.8 的比例走
+/// 摆件模式下的窗口尺寸：viewBox 是 40x50，按 0.8 的宽高比算出画面，
+/// 底部再留 14px 给金额铭文，火焰不被压缩、读数也不压住火堆
 fn ornament_size(size: &str) -> (f64, f64) {
     match size {
-        "small" => (112.0, 140.0),
-        "large" => (200.0, 250.0),
-        _ => (152.0, 190.0),
+        "small" => (112.0, 154.0),
+        "large" => (200.0, 264.0),
+        _ => (152.0, 204.0),
     }
 }
 
 /// 设置面板是独立窗口，尺寸固定。
 /// 这样右键开设置时篝火既不用改大小、也不用挪位置，面板还能自己挑个不挡路的地方待着
 const PANEL_W: f64 = 300.0;
-const PANEL_H: f64 = 580.0;
+const PANEL_H: f64 = 766.0;
 const PANEL_GAP: i32 = 12;
 
 pub struct AppState {

@@ -12,8 +12,11 @@
 #ornament:active { cursor: grabbing; }
 
 #scene {
+  position: absolute;
+  left: 0;
+  top: 0;
   width: 100%;
-  height: 100%;
+  height: calc(100% - 14px);
   pointer-events: none;
   overflow: visible;
 }
@@ -34,30 +37,95 @@
   pointer-events: none;
 }
 
-/* 今日用量读数：常驻但压得很淡，鼠标放上去才看清 */
+/* 篝火底下的余烬铭文：金额单独占一条带子，永远不压火堆 */
 #readout {
   position: absolute;
   left: 50%;
-  bottom: 1px;
+  bottom: 2px;
   transform: translateX(-50%);
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: rgba(10, 10, 15, 0.55);
-  color: rgba(255, 200, 106, 0.62);
+  padding: 0;
+  background: none;
+  color: rgba(255, 200, 106, 0.78);
   font-variant-numeric: tabular-nums;
-  font-size: 11px;
+  font-size: 12px;
+  line-height: 1.35;
+  letter-spacing: 0.3px;
   white-space: nowrap;
-  transition: color 160ms ease, background 160ms ease, opacity 160ms ease;
   pointer-events: none;
 }
 
-#ornament:hover #readout {
-  color: #ffc86a;
-  background: rgba(10, 10, 15, 0.85);
+/* 铭文上方那道细线，暖金过渡到紫 */
+#readout::before {
+  content: "";
+  position: absolute;
+  left: -13px;
+  right: -13px;
+  top: -4px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 186, 96, 0.5) 24%, rgba(198, 140, 255, 0.5) 76%, transparent);
+  opacity: 0.7;
+  transition: opacity 200ms ease;
 }
 
-#readout b { font-weight: 600; }
-#readout span { margin-left: 3px; color: rgba(154, 143, 125, 0.85); font-size: 10px; }
+/* 线中央那颗菱形符文火星，会一明一暗地喘气 */
+#readout::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: -6px;
+  width: 3px;
+  height: 3px;
+  background: rgba(255, 216, 145, 0.92);
+  box-shadow: 0 0 6px rgba(255, 176, 80, 0.9), 0 0 12px rgba(180, 120, 255, 0.5);
+  animation: ember 3.6s ease-in-out infinite;
+}
+
+@keyframes ember {
+  0%, 100% { opacity: 0.5; transform: translateX(-50%) rotate(45deg) scale(0.8); }
+  50% { opacity: 1; transform: translateX(-50%) rotate(45deg) scale(1.2); }
+}
+
+#readout b {
+  font-weight: 600;
+  background: linear-gradient(180deg, #ffeec9 0%, #ffc45e 48%, #c58cff 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 4px rgba(255, 168, 66, 0.45)) drop-shadow(0 0 10px rgba(150, 96, 255, 0.28));
+  transition: filter 200ms ease;
+}
+
+/* 币种平时隐去，鼠标放上去才浮出来；退出布局流，免得金额跟着偏 */
+#readout span {
+  position: absolute;
+  left: 100%;
+  top: 50%;
+  margin-left: 4px;
+  transform: translateY(-50%);
+  color: rgba(180, 152, 255, 0.85);
+  font-size: 8px;
+  letter-spacing: 1px;
+  opacity: 0;
+  transition: opacity 200ms ease;
+}
+
+#ornament:hover #readout b {
+  filter: drop-shadow(0 0 6px rgba(255, 190, 90, 0.85)) drop-shadow(0 0 16px rgba(160, 100, 255, 0.45));
+}
+
+#ornament:hover #readout span { opacity: 0.9; }
+#ornament:hover #readout::before { opacity: 1; }
+
+/* 小号摆件空间太窄，只留数字 */
+@media (max-width: 132px) {
+  #readout { bottom: 1px; font-size: 10px; letter-spacing: 0.2px; }
+  #readout::before, #readout::after { display: none; }
+  #readout span { font-size: 7px; letter-spacing: 0.4px; color: rgba(212, 194, 255, 0.95); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #readout::after { animation: none; }
+}
 
 /* 数据源出问题时顶上读数，点一下看详情 */
 #alert {

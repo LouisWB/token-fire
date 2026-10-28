@@ -189,6 +189,17 @@
   font-size: 9.5px;
 }
 
+.usage-grid i {
+  overflow: hidden;
+  color: #9a8f7d;
+  font-size: 9.5px;
+  font-style: normal;
+  line-height: 1.3;
+  font-variant-numeric: tabular-nums;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .usage-grid b {
   overflow: hidden;
   color: #ffc86a;
@@ -197,6 +208,113 @@
   font-variant-numeric: tabular-nums;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.cost-tabs {
+  display: flex;
+  gap: 4px;
+}
+
+.cost-tabs button {
+  padding: 3px 7px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.03);
+  color: #8b8b9a;
+  font: inherit;
+  font-size: 10px;
+  line-height: 1.2;
+  cursor: pointer;
+}
+
+.cost-tabs button:hover { background: rgba(255, 255, 255, 0.08); }
+
+.cost-tabs button.on {
+  border-color: rgba(255, 168, 56, 0.6);
+  background: rgba(255, 140, 30, 0.16);
+  color: #ffd79a;
+}
+
+.cost-figure {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.cost-figure b {
+  color: #ffc86a;
+  font-size: 20px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.3px;
+}
+
+.cost-figure span {
+  color: #6e6e7d;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.cost-chart-wrap { position: relative; }
+
+#cost-chart {
+  display: block;
+  width: 100%;
+  height: 76px;
+  cursor: crosshair;
+}
+
+.cost-tip {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  z-index: 2;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 3px 8px 4px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 7px;
+  background: rgba(20, 19, 26, 0.96);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+  transform: translateX(-50%);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.cost-tip[hidden] { display: none; }
+
+.cost-tip-time {
+  color: #8b8b9a;
+  font-size: 9.5px;
+  line-height: 1.4;
+}
+
+.cost-tip-row {
+  display: flex;
+  align-items: baseline;
+  gap: 3px;
+  font-size: 9.5px;
+  line-height: 1.4;
+}
+
+.cost-tip-row em {
+  color: #6e6e7d;
+  font-style: normal;
+}
+
+.cost-tip-row b {
+  color: #ffc86a;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.cost-axis {
+  display: flex;
+  justify-content: space-between;
+  color: #5f5f6e;
+  font-size: 9px;
 }
 
 .options { display: flex; flex-direction: column; gap: 5px; }
