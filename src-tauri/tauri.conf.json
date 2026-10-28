@@ -4,6 +4,7 @@
   "version": "0.1.0",
   "identifier": "com.tokenfire.widget",
   "build": {
+    "beforeDevCommand": "npm run watch:ui",
     "frontendDist": "../ui"
   },
   "app": {

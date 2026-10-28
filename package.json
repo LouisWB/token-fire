@@ -10,6 +10,8 @@
     "ui": "node scripts/build-ui.mjs",
     "qa:page": "node scripts/qa-page.mjs",
     "dev": "npm run prepare:app && cargo build --manifest-path src-tauri/Cargo.toml && npm run start:app",
+    "dev:hot": "npm run prepare:app && tauri dev",
+    "watch:ui": "node scripts/watch-ui.mjs",
     "prepare:app": "npm run art && npm run icons && npm run ui",
     "start:app": "node scripts/run-app.mjs",
     "build:exe": "npm run prepare:app && cargo build --release --manifest-path src-tauri/Cargo.toml",

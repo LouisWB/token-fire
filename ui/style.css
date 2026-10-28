@@ -12,7 +12,9 @@
   background: rgba(0, 0, 0, 0.01);
 }
 
-#ornament:active { cursor: grabbing; }
+#ornament:active {
+  cursor: grabbing;
+}
 
 #scene {
   position: absolute;
@@ -33,7 +35,13 @@
   aspect-ratio: 1;
   transform: translate(-50%, 16%);
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(196, 126, 255, 0.34) 0%, rgba(124, 62, 226, 0.16) 42%, rgba(255, 158, 70, 0.09) 64%, transparent 78%);
+  background: radial-gradient(
+    circle,
+    rgba(196, 126, 255, 0.34) 0%,
+    rgba(124, 62, 226, 0.16) 42%,
+    rgba(255, 158, 70, 0.09) 64%,
+    transparent 78%
+  );
   filter: blur(7px);
   opacity: var(--glow, 0);
   transition: opacity 260ms linear;
@@ -44,7 +52,7 @@
 #readout {
   position: absolute;
   left: 50%;
-  bottom: 0px;
+  bottom: 20px;
   transform: translateX(-50%);
   padding: 0;
   background: none;
@@ -65,7 +73,13 @@
   right: -13px;
   top: -4px;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255, 186, 96, 0.5) 24%, rgba(198, 140, 255, 0.5) 76%, transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 186, 96, 0.5) 24%,
+    rgba(198, 140, 255, 0.5) 76%,
+    transparent
+  );
   opacity: 0.7;
   transition: opacity 200ms ease;
 }
@@ -79,13 +93,22 @@
   width: 3px;
   height: 3px;
   background: rgba(255, 216, 145, 0.92);
-  box-shadow: 0 0 6px rgba(255, 176, 80, 0.9), 0 0 12px rgba(180, 120, 255, 0.5);
+  box-shadow:
+    0 0 6px rgba(255, 176, 80, 0.9),
+    0 0 12px rgba(180, 120, 255, 0.5);
   animation: ember 3.6s ease-in-out infinite;
 }
 
 @keyframes ember {
-  0%, 100% { opacity: 0.5; transform: translateX(-50%) rotate(45deg) scale(0.8); }
-  50% { opacity: 1; transform: translateX(-50%) rotate(45deg) scale(1.2); }
+  0%,
+  100% {
+    opacity: 0.5;
+    transform: translateX(-50%) rotate(45deg) scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: translateX(-50%) rotate(45deg) scale(1.2);
+  }
 }
 
 #readout b {
@@ -94,7 +117,8 @@
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  filter: drop-shadow(0 0 4px rgba(255, 168, 66, 0.45)) drop-shadow(0 0 10px rgba(150, 96, 255, 0.28));
+  filter: drop-shadow(0 0 4px rgba(255, 168, 66, 0.45))
+    drop-shadow(0 0 10px rgba(150, 96, 255, 0.28));
   transition: filter 200ms ease;
 }
 
@@ -113,21 +137,39 @@
 }
 
 #ornament:hover #readout b {
-  filter: drop-shadow(0 0 6px rgba(255, 190, 90, 0.85)) drop-shadow(0 0 16px rgba(160, 100, 255, 0.45));
+  filter: drop-shadow(0 0 6px rgba(255, 190, 90, 0.85))
+    drop-shadow(0 0 16px rgba(160, 100, 255, 0.45));
 }
 
-#ornament:hover #readout span { opacity: 0.9; }
-#ornament:hover #readout::before { opacity: 1; }
+#ornament:hover #readout span {
+  opacity: 0.9;
+}
+#ornament:hover #readout::before {
+  opacity: 1;
+}
 
 /* 小号摆件空间太窄，只留数字 */
 @media (max-width: 132px) {
-  #readout { bottom: 1px; font-size: 10px; letter-spacing: 0.2px; }
-  #readout::before, #readout::after { display: none; }
-  #readout span { font-size: 7px; letter-spacing: 0.4px; color: rgba(212, 194, 255, 0.95); }
+  #readout {
+    bottom: 1px;
+    font-size: 10px;
+    letter-spacing: 0.2px;
+  }
+  #readout::before,
+  #readout::after {
+    display: none;
+  }
+  #readout span {
+    font-size: 7px;
+    letter-spacing: 0.4px;
+    color: rgba(212, 194, 255, 0.95);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  #readout::after { animation: none; }
+  #readout::after {
+    animation: none;
+  }
 }
 
 /* 数据源出问题时顶上读数，点一下看详情 */
@@ -149,7 +191,15 @@
   cursor: pointer;
 }
 
-#alert[hidden] { display: none; }
-#alert.warn { border-color: rgba(255, 196, 90, 0.4); background: rgba(40, 30, 8, 0.9); color: #ffcf7a; }
+#alert[hidden] {
+  display: none;
+}
+#alert.warn {
+  border-color: rgba(255, 196, 90, 0.4);
+  background: rgba(40, 30, 8, 0.9);
+  color: #ffcf7a;
+}
 
-#alert:not([hidden]) ~ #readout { display: none; }
+#alert:not([hidden]) ~ #readout {
+  display: none;
+}

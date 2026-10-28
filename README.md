@@ -8,6 +8,7 @@
 
 ```powershell
 npm run dev
+npm run dev:hot
 npm run build:exe
 npm run build:app
 ```
@@ -15,12 +16,15 @@ npm run build:app
 | 命令 | 作用 |
 | --- | --- |
 | `npm run dev` | 生成资源、编译并启动桌面摆件 |
+| `npm run dev:hot` | 热更新开发：前端改动自动刷新，Rust 改动自动重启 |
 | `npm run art` | 生成篝火 SVG 和强度预览页 |
 | `npm run icons` | 生成应用图标 |
 | `npm run ui` | 把 `web/` 和像素引擎拼进 `ui/` |
 | `npm run qa:page` | 用无头 Chrome 截图设置面板 |
 | `npm run build:exe` | 只生成单文件 exe |
 | `npm run build:app` | 生成 exe 和 NSIS 安装包 |
+
+`npm run dev:hot` 会监听 `web/` 和 `src/pixel/`，改动后自动重建 `ui/` 并刷新窗口；Rust 改动由 Tauri 自动重启。
 
 ## DeepSeek 登录与用量
 
