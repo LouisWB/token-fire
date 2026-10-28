@@ -6,14 +6,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: grab;
-  /* 透明窗口只对绘制过像素的地方做命中测试，铺一层肉眼看不见的底色，
-     空白处也能右键开设置、按住拖动 */
-  background: rgba(0, 0, 0, 0.01);
-}
-
-#ornament:active {
-  cursor: grabbing;
+  /* 整层不接事件：窗口空白处保持穿透，只有下面的火盆热区能拖能右键 */
+  pointer-events: none;
 }
 
 #scene {
@@ -26,6 +20,18 @@
   overflow: visible;
 }
 
+/* 火焰热区：位置和大小由 fire-view 按火焰外框实时写进 rect，
+   火小的时候只剩炉口那一小块，上面不再整片都能拖 */
+#scene .flame-hit {
+  fill: none;
+  pointer-events: all;
+  cursor: grab;
+}
+
+#scene .flame-hit:active {
+  cursor: grabbing;
+}
+
 /* 篝火底座：做成上宽下窄的火盆，金额放在盆身中间 */
 #base {
   position: absolute;
@@ -34,7 +40,12 @@
   width: 64%;
   height: 40px;
   transform: translateX(-50%);
-  pointer-events: none;
+  cursor: grab;
+  pointer-events: auto;
+}
+
+#base:active {
+  cursor: grabbing;
 }
 
 /* 盆口：比盆身宽一圈，顶面留一道高光 */
@@ -254,6 +265,8 @@
   overflow: hidden;
   text-overflow: ellipsis;
   cursor: pointer;
+  /* 父层 pointer-events 关掉了，登录提示得单独打开 */
+  pointer-events: auto;
 }
 
 #alert[hidden] {

@@ -95,6 +95,31 @@ export function flameFrameRects(intensity, frame, seed = 1) {
   return runsToSvg(buildFlameLayer(intensity, frame, seed));
 }
 
+// 三四帧火焰合起来的外框（像素坐标）：摆件拿它当拖拽热区，
+// 火小的时候热区就跟着缩回炉口，不会在上面留一大片能拖的空白
+export function flameBounds(intensity, seed = 1, frameCount = 4) {
+  let x0 = Infinity;
+  let y0 = Infinity;
+  let x1 = -Infinity;
+  let y1 = -Infinity;
+
+  for (let frame = 0; frame < frameCount; frame++) {
+    const grid = buildFlameLayer(intensity, frame, seed);
+    for (let y = 0; y < grid.h; y++) {
+      for (let x = 0; x < grid.w; x++) {
+        if (grid.cells[y * grid.w + x] == null) continue;
+        if (x < x0) x0 = x;
+        if (x > x1) x1 = x;
+        if (y < y0) y0 = y;
+        if (y > y1) y1 = y;
+      }
+    }
+  }
+
+  if (x0 > x1) return null;
+  return { x: x0, y: y0, w: x1 - x0 + 1, h: y1 - y0 + 1 };
+}
+
 export function staticLayerRects(intensity) {
   return runsToSvg(buildStaticLayer(intensity));
 }

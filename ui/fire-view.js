@@ -1,5 +1,5 @@
 // 摆件和设置面板共用的"火焰视图"：负责把火势画出来、把读数写出来
-import { flameFrameRects, staticLayerRects, sparksToSvg } from "./pixel/svg.js";
+import { flameBounds, flameFrameRects, staticLayerRects, sparksToSvg } from "./pixel/svg.js";
 import { VIEW_BOX } from "./pixel/scene.js";
 
 const FRAME_COUNT = 4;
@@ -52,6 +52,7 @@ export class FireView {
     this.glowEl = glowEl;
     this.seed = seed;
     this.frames = [...scene.querySelectorAll("g.frame")];
+    this.hitRect = scene.querySelector(".flame-hit");
     this.target = 0;
     this.shown = 0;
     this.lastRender = 0;
@@ -115,6 +116,7 @@ export class FireView {
       for (let f = 0; f < FRAME_COUNT; f++) {
         this.frames[f].innerHTML = flameFrameRects(it, f, this.seed);
       }
+      this.fitHit(it);
     }
 
     const bucket = Math.round(intensity * STATIC_QUANT);
@@ -128,5 +130,27 @@ export class FireView {
     for (let i = 0; i < sparks.length; i++) {
       sparks[i].classList.toggle("off", i >= visible);
     }
+  }
+
+  /* 拖拽热区贴着火焰本身：火势一变，热区就重新框一次 */
+  fitHit(intensity) {
+    const rect = this.hitRect;
+    if (!rect) return;
+
+    const box = flameBounds(intensity, this.seed, FRAME_COUNT);
+    if (!box) {
+      rect.setAttribute("width", "0");
+      rect.setAttribute("height", "0");
+      return;
+    }
+
+    const pad = 1;
+    const top = box.y - pad;
+    // 底边一直铺到画面底部，和下面的火盆接上，石头带也不会漏
+    const bottom = VIEW_BOX.y + VIEW_BOX.h;
+    rect.setAttribute("x", String(box.x - pad));
+    rect.setAttribute("y", String(top));
+    rect.setAttribute("width", String(box.w + pad * 2));
+    rect.setAttribute("height", String(bottom - top));
   }
 }
