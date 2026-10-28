@@ -125,7 +125,7 @@ const html = source
           "<script>setTimeout(function () {" +
           "var s = document.getElementById('cost-chart'); if (!s) return;" +
           "var r = s.getBoundingClientRect();" +
-          "s.dispatchEvent(new PointerEvent('pointermove', { clientX: r.left + r.width * 0.62, clientY: r.top + 30, bubbles: true }));" +
+          "s.dispatchEvent(new PointerEvent('pointermove', { clientX: r.left + r.width * " + (process.env.QA_HOVER_X || 0.62) + ", clientY: r.top + 30, bubbles: true }));" +
           "}, 1200);</script>"
         : "") +
       (MEASURE

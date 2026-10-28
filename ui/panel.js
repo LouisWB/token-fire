@@ -206,14 +206,20 @@ function showChartTip(index) {
   hover.append(guide, dot);
   svg.appendChild(hover);
 
-  const wrap = els.costTip.parentElement;
-  const width = wrap.clientWidth || CHART_W;
-  const left = Math.min(Math.max((coord[0] / CHART_W) * width, 58), width - 58);
-  els.costTip.style.left = left + "px";
   els.costTipTime.textContent = formatAxisLabel(point.label);
   els.costTipTokens.textContent = formatTokenCount(point.tokens);
   els.costTipCost.textContent = formatCost(point.value, chartCurrency);
   els.costTip.hidden = false;
+
+  // 内容先上屏再量宽，边缘处才能整个翻进来，不会被面板裁掉
+  const wrap = els.costTip.parentElement;
+  const width = wrap.clientWidth || CHART_W;
+  const tipWidth = els.costTip.offsetWidth;
+  const raw = (coord[0] / CHART_W) * width;
+  const left = width <= tipWidth + 6
+    ? width / 2
+    : Math.min(Math.max(raw, tipWidth / 2 + 1), width - tipWidth / 2 - 1);
+  els.costTip.style.left = left + "px";
 }
 
 function onChartMove(event) {
