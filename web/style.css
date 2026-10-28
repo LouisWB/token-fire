@@ -7,6 +7,9 @@
   align-items: center;
   justify-content: center;
   cursor: grab;
+  /* 透明窗口只对绘制过像素的地方做命中测试，铺一层肉眼看不见的底色，
+     空白处也能右键开设置、按住拖动 */
+  background: rgba(0, 0, 0, 0.01);
 }
 
 #ornament:active { cursor: grabbing; }
