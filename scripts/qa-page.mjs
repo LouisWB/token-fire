@@ -21,7 +21,7 @@ const MODULES = [
   "src/pixel/palette.js",
   "src/pixel/grid.js",
   "src/pixel/flame.js",
-  "src/pixel/logs.js",
+  "src/pixel/stones.js",
   "src/pixel/scene.js",
   "src/pixel/svg.js",
   "web/fire-view.js",

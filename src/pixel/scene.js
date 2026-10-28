@@ -1,43 +1,13 @@
 import { createGrid, fillEllipse, put } from "./grid.js";
 import { EMBER_RAMP } from "./palette.js";
 import { drawFlame, BASE_Y, CENTER_X } from "./flame.js";
-import { drawLogs } from "./logs.js";
+import { drawStoneRing } from "./stones.js";
 
 export const SCENE_W = 44;
 export const SCENE_H = 46;
 
 // 桌面上的落地阴影
-const GROUND = { cx: 22, cy: 37.4, rx: 14.5, ry: 1.4 };
-
-// 围炉石：只留前排四块小整石，块头统一、顶面受光
-const RING_STONES = [
-  { x: 4, y: 32, w: 4, h: 4, inner: "right" },
-  { x: 10, y: 33, w: 4, h: 4, inner: "right" },
-  { x: 30, y: 33, w: 4, h: 4, inner: "left" },
-  { x: 36, y: 32, w: 4, h: 4, inner: "left" },
-];
-
-// 一块敦实的石头：圆角顶、暗底、朝火的一侧提亮
-function drawBoulder(grid, stone) {
-  const { x, y, w, h, inner } = stone;
-  for (let yy = y; yy < y + h; yy++) {
-    for (let xx = x; xx < x + w; xx++) {
-      const top = yy === y;
-      const bottom = yy === y + h - 1;
-      const left = xx === x;
-      const right = xx === x + w - 1;
-      if ((top || bottom) && (left || right)) continue;
-      let key = "stone2";
-      if (top) key = "stone3";
-      else if (bottom) key = "stone1";
-      else if (inner === "right" && right) key = "stone3";
-      else if (inner === "left" && left) key = "stone3";
-      else if (left || right) key = "stone1";
-      put(grid, xx, yy, key);
-    }
-  }
-  put(grid, x + 1, y, "stone4");
-}
+const GROUND = { cx: 22, cy: 36.8, rx: 12, ry: 1.2 };
 
 function clamp01(v) {
   return v < 0 ? 0 : v > 1 ? 1 : v;
@@ -47,9 +17,10 @@ function clamp01(v) {
 function drawEmbers(grid, intensity) {
   const it = clamp01(intensity);
   const cx = CENTER_X;
-  const cy = BASE_Y + 1.6;
-  const rx = 6.8;
-  const ry = 2.1;
+  const cy = BASE_Y + 1.2;
+  // 火越小，炉膛里露出的余烬越少，不会在低火时铺成一条亮带
+  const rx = 2.5 + 3.9 * it;
+  const ry = 0.6 + 1.3 * it;
   const y0 = Math.floor(cy - ry);
   const y1 = Math.ceil(cy + ry);
   const x0 = Math.floor(cx - rx);
@@ -69,14 +40,12 @@ function drawEmbers(grid, intensity) {
   }
 }
 
-// 不随火焰抖动的部分：地面、余烬床、木柴、围炉石、符文
+// 不随火焰抖动的部分：地面、余烬床、围炉石带、符文（石带压住炉膛近边）
 export function buildStaticLayer(intensity) {
   const grid = createGrid(SCENE_W, SCENE_H);
   fillEllipse(grid, GROUND.cx, GROUND.cy, GROUND.rx, GROUND.ry, "ground");
-  fillEllipse(grid, 22, 35.2, 6.8, 1.7, "ash0");
-  drawLogs(grid, intensity);
   drawEmbers(grid, intensity);
-  for (const stone of RING_STONES) drawBoulder(grid, stone);
+  drawStoneRing(grid, intensity);
   return grid;
 }
 

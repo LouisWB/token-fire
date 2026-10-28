@@ -113,7 +113,7 @@ function rasterize(grid, crop, size) {
   return rgba;
 }
 
-// 图标用的画面：旺火状态的第 0 帧，火焰画在柴堆上面
+// 图标用的画面：旺火状态的第 0 帧，火焰画在石圈上面
 function iconGrid() {
   const staticLayer = buildStaticLayer(0.85);
   const flame = buildFlameLayer(0.85, 0, 3);
