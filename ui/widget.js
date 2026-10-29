@@ -66,7 +66,7 @@ function paintHint() {
   if (hintEl.textContent !== text) hintEl.textContent = text;
 }
 
-// 悬停火堆时浮出来的那行小字：按本周日均估算还能烧多久
+// 悬停火堆时浮出来的那行小字：按日均估算还能烧多久
 function renderHint(view) {
   const days = !view?.error && view?.loggedIn ? daysLeftOf(view) : null;
   if (days === null) {

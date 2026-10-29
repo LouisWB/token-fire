@@ -49,16 +49,18 @@ function dateKey(date) {
   );
 }
 
-// 日均花费：取最近三个完整天的 token 消耗平均值，再按最近一天的单价折算成钱。
-// 今天没过完，算进来会把日均摊薄、把可烧天数撑大，所以只用已经完整结束的天。
+// 日均花费：今天的实际消费和最近三个完整天的均值取大的那个。
+// 今天已经花掉的钱最能反映当前的燃烧速度；今天还没怎么花时仍参考前几天，免得每天一早火势虚高。
 // 周初不足三天时退回本周累计 ÷ 已过天数；没有消耗记录时返回 0。
 export function dailyCostOf(view) {
+  const todayCost = Math.max(0, Number(view?.costToday) || 0);
   const trends = Array.isArray(view?.trends?.week) ? view.trends.week : [];
   const today = dateKey(new Date());
   const recent = trends
     .filter((point) => point && point.label && point.label < today)
     .slice(-3);
 
+  let average = 0;
   if (recent.length) {
     const costs = recent.map((point) => Math.max(0, Number(point.value) || 0));
     const tokens = recent.map((point) => Math.max(0, Number(point.tokens) || 0));
@@ -66,15 +68,20 @@ export function dailyCostOf(view) {
     const tokenTotal = tokens.reduce((sum, value) => sum + value, 0);
     if (tokenTotal > 0 && costTotal > 0) {
       const unit = costs[recent.length - 1] / tokens[recent.length - 1];
-      if (Number.isFinite(unit) && unit > 0) return (tokenTotal / recent.length) * unit;
+      if (Number.isFinite(unit) && unit > 0) average = (tokenTotal / recent.length) * unit;
     }
-    if (costTotal > 0) return costTotal / recent.length;
+    if (!average && costTotal > 0) average = costTotal / recent.length;
   }
 
-  const week = Number(view?.costWeek);
-  if (!Number.isFinite(week) || week <= 0) return 0;
-  const days = trends.length > 0 && trends.length <= 7 ? trends.length : 7;
-  return week / days;
+  if (!average) {
+    const week = Number(view?.costWeek);
+    if (Number.isFinite(week) && week > 0) {
+      const days = trends.length > 0 && trends.length <= 7 ? trends.length : 7;
+      average = week / days;
+    }
+  }
+
+  return Math.max(todayCost, average);
 }
 
 // 余额还能烧多久；没有消耗数据时返回 null
