@@ -123,6 +123,25 @@
       </div>
 
       <div class="group">
+        <div class="group-head">
+          <h2>同步间隔</h2>
+          <span class="group-note">5 - 3600 秒</span>
+        </div>
+        <label class="field">
+          <input
+            id="sync-interval"
+            type="number"
+            min="5"
+            max="3600"
+            step="1"
+            inputmode="numeric"
+            aria-label="DeepSeek 同步间隔（秒）"
+          />
+          <span>秒</span>
+        </label>
+      </div>
+
+      <div class="group">
         <h2>同步状态</h2>
         <p id="status" class="hint">准备连接 DeepSeek…</p>
       </div>

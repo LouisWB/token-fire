@@ -110,9 +110,9 @@
   border-radius: 50%;
   background: radial-gradient(
     circle,
-    rgba(196, 126, 255, 0.34) 0%,
-    rgba(124, 62, 226, 0.16) 42%,
-    rgba(255, 158, 70, 0.09) 64%,
+    rgba(255, 150, 60, 0.34) 0%,
+    rgba(255, 106, 24, 0.17) 42%,
+    rgba(255, 190, 90, 0.09) 64%,
     transparent 78%
   );
   filter: blur(7px);

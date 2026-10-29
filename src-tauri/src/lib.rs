@@ -20,7 +20,7 @@ fn ornament_size(size: &str) -> (f64, f64) {
 /// 设置面板是独立窗口，尺寸固定。
 /// 这样右键开设置时篝火既不用改大小、也不用挪位置，面板还能自己挑个不挡路的地方待着
 const PANEL_W: f64 = 300.0;
-const PANEL_H: f64 = 818.0;
+const PANEL_H: f64 = 880.0;
 const PANEL_GAP: i32 = 12;
 
 pub struct AppState {
@@ -121,9 +121,10 @@ fn place_panel(app: &AppHandle) {
 
 #[tauri::command]
 fn deepseek_status(app: AppHandle, state: State<'_, AppState>) -> deepseek::View {
+    let interval = state.snapshot().sync_interval();
     let (work, view) = {
         let mut ds = state.deepseek.lock().unwrap();
-        let work = ds.prepare();
+        let work = ds.prepare(interval);
         (work, ds.view.clone())
     };
 
@@ -179,6 +180,7 @@ fn set_config(
     size: String,
     autostart: bool,
     hint_always: bool,
+    sync_interval_secs: u64,
 ) -> Result<config::Config, String> {
     let size_changed;
     let snapshot;
@@ -188,6 +190,8 @@ fn set_config(
         cfg.size = size;
         cfg.autostart = autostart;
         cfg.hint_always = hint_always;
+        cfg.sync_interval_secs =
+            sync_interval_secs.clamp(config::SYNC_SECS_MIN, config::SYNC_SECS_MAX);
         snapshot = cfg.clone();
         drop(cfg);
         config::save(&snapshot)?;

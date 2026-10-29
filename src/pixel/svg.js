@@ -34,8 +34,8 @@ export function sparksToSvg({ intensity, seed = 1, originX = 22, originY = 25 })
     const rise = 10 + 20 * it + rand() * 6;
     const drift = (rand() - 0.5) * 14;
     const hot = rand();
-    // 魔法余烬：多数是冷色符文光，少量是金色炉灰
-    const color = hot > 0.74 ? PALETTE.rune2 : hot > 0.52 ? PALETTE.rune0 : hot > 0.3 ? PALETTE.flame4 : PALETTE.rune1;
+    // 火星跟着火焰走：多数是金色炉灰，少量偏红的炭屑
+    const color = hot > 0.74 ? PALETTE.flame6 : hot > 0.46 ? PALETTE.flame5 : hot > 0.2 ? PALETTE.flame4 : PALETTE.flame2;
 
     parts.push(
       `<g transform="translate(${sx.toFixed(2)} ${sy.toFixed(2)})">` +

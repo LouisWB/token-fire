@@ -2,6 +2,9 @@
 import { FireView, dailyCostOf, formatBalance, formatTokenCount } from "./fire-view.js";
 
 const POLL_MS = 500;
+const SYNC_MIN = 5;
+const SYNC_MAX = 3600;
+const SYNC_DEFAULT = 20;
 const invoke = window.__TAURI__?.core?.invoke ?? null;
 const listen = window.__TAURI__?.event?.listen ?? null;
 
@@ -32,6 +35,7 @@ const els = {
   sizes: document.getElementById("sizes"),
   autostart: document.getElementById("autostart"),
   hintAlways: document.getElementById("hint-always"),
+  syncInterval: document.getElementById("sync-interval"),
   status: document.getElementById("status"),
   head: document.getElementById("panel-head"),
   collapse: document.getElementById("collapse"),
@@ -97,16 +101,27 @@ function applyConfig(cfg) {
   size = SIZE_PRESETS.some((preset) => preset.key === cfg.size) ? cfg.size : "medium";
   els.autostart.checked = !!cfg.autostart;
   els.hintAlways.checked = !!cfg.hintAlways;
+  els.syncInterval.value = String(syncSecsOf(cfg.syncIntervalSecs));
   renderSizes();
+}
+
+// 输入框里只留整数秒，超出范围按边界算
+function syncSecsOf(raw) {
+  const value = Math.round(Number(raw));
+  if (!Number.isFinite(value)) return SYNC_DEFAULT;
+  return Math.min(SYNC_MAX, Math.max(SYNC_MIN, value));
 }
 
 async function saveConfig() {
   if (!invoke) return;
+  const syncIntervalSecs = syncSecsOf(els.syncInterval.value);
+  els.syncInterval.value = String(syncIntervalSecs);
   try {
     await invoke("set_config", {
       size,
       autostart: els.autostart.checked,
       hintAlways: els.hintAlways.checked,
+      syncIntervalSecs,
     });
     setStatus("ok", "设置已保存");
   } catch (err) {
@@ -530,6 +545,7 @@ els.costTabs.addEventListener("click", (event) => {
 els.collapse.addEventListener("click", close);
 els.autostart.addEventListener("change", saveConfig);
 els.hintAlways.addEventListener("change", saveConfig);
+els.syncInterval.addEventListener("change", saveConfig);
 els.quit.addEventListener("click", () => {
   if (invoke) invoke("quit_app");
 });

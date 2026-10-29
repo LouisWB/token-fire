@@ -42,7 +42,14 @@ function flatten(files) {
   return chunks.join(LF + LF);
 }
 
-const CONFIG = { size: "medium", autostart: true, x: null, y: null };
+const CONFIG = {
+  size: "medium",
+  autostart: true,
+  hintAlways: !!process.env.QA_HINT,
+  syncIntervalSecs: Number(process.env.QA_SYNC || 20),
+  x: null,
+  y: null,
+};
 const DEEPSEEK = {
   loggedIn: true,
   syncing: false,

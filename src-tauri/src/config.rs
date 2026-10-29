@@ -2,6 +2,12 @@
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
+use std::time::Duration;
+
+/// 已登录时的同步间隔（秒）：面板里可以改，太短容易触发官方限流
+pub const SYNC_SECS_MIN: u64 = 5;
+pub const SYNC_SECS_MAX: u64 = 3600;
+pub const SYNC_SECS_DEFAULT: u64 = 20;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default, rename_all = "camelCase")]
@@ -11,8 +17,16 @@ pub struct Config {
     pub autostart: bool,
     /// 火堆上的"还能烧多久"是否常显；关着就只在悬停时浮出来
     pub hint_always: bool,
+    /// 已登录后的同步间隔（秒）
+    pub sync_interval_secs: u64,
     pub x: Option<i32>,
     pub y: Option<i32>,
+}
+
+impl Config {
+    pub fn sync_interval(&self) -> Duration {
+        Duration::from_secs(self.sync_interval_secs.clamp(SYNC_SECS_MIN, SYNC_SECS_MAX))
+    }
 }
 
 impl Default for Config {
@@ -21,6 +35,7 @@ impl Default for Config {
             size: "medium".to_string(),
             autostart: false,
             hint_always: false,
+            sync_interval_secs: SYNC_SECS_DEFAULT,
             x: None,
             y: None,
         }

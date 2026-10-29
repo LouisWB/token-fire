@@ -36,19 +36,24 @@ function drawStone(grid, { x, y, w, h }) {
   put(grid, x + 1, y, "stone4");
 }
 
-// 石面上的符文：单色菱形刻纹，低火时熄灭
-function drawDiamondRune(grid, cx, cy) {
-  put(grid, cx, cy, "rune2");
-  put(grid, cx - 1, cy + 1, "rune0");
-  put(grid, cx + 1, cy + 1, "rune0");
-  put(grid, cx, cy + 2, "rune0");
+// 石面上的符文：单色菱形刻纹，火越旺菱形撑得越大
+function drawDiamondRune(grid, cx, cy, radius) {
+  for (let dy = -radius; dy <= radius; dy += 1) {
+    for (let dx = -radius; dx <= radius; dx += 1) {
+      const dist = Math.abs(dx) + Math.abs(dy);
+      if (dist > radius) continue;
+      put(grid, cx + dx, cy + dy, dist === 0 ? "rune2" : "rune0");
+    }
+  }
 }
+
+// 低火是一颗小菱形，过了阈值撑成满石头的菱形
+const RUNE_BIG_AT = 0.55;
 
 export function drawStoneRing(grid, intensity = 1) {
   for (const stone of STONES) drawStone(grid, stone);
 
-  if (intensity > 0.2) {
-    drawDiamondRune(grid, 13, 31);
-    drawDiamondRune(grid, 30, 31);
-  }
+  const radius = intensity >= RUNE_BIG_AT ? 2 : 1;
+  drawDiamondRune(grid, 13, 33, radius);
+  drawDiamondRune(grid, 30, 33, radius);
 }

@@ -72,7 +72,7 @@
   aspect-ratio: 1;
   transform: translate(-50%, 16%);
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(196, 126, 255, 0.4) 0%, rgba(124, 62, 226, 0.18) 42%, rgba(255, 158, 70, 0.1) 64%, transparent 78%);
+  background: radial-gradient(circle, rgba(255, 150, 60, 0.4) 0%, rgba(255, 106, 24, 0.2) 42%, rgba(255, 190, 90, 0.1) 64%, transparent 78%);
   filter: blur(7px);
   opacity: var(--glow, 0);
   transition: opacity 260ms linear;
@@ -406,6 +406,48 @@
 .switch input:checked + .track .knob {
   transform: translateX(15px);
   background: #ffc061;
+}
+
+.group-note {
+  color: #6e6e7d;
+  font-size: 10.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 数字输入：同步间隔之类只填一个数的设置 */
+.field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.03);
+  color: #9a9aab;
+  font-size: 11.5px;
+}
+
+.field:focus-within {
+  border-color: rgba(255, 168, 56, 0.65);
+  background: rgba(255, 140, 30, 0.09);
+}
+
+.field input {
+  flex: 1;
+  border: 0;
+  background: none;
+  color: #ffd79a;
+  font: inherit;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  outline: none;
+}
+
+.field input::-webkit-outer-spin-button,
+.field input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 
 footer { margin-top: auto; padding-top: 8px; }

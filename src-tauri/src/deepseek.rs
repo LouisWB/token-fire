@@ -9,7 +9,6 @@ const LOGIN_URL: &str = "https://platform.deepseek.com/sign_in";
 const USAGE_URL: &str = "https://platform.deepseek.com/usage";
 const SYNC_TIMEOUT: Duration = Duration::from_secs(15);
 const PROBE_INTERVAL: Duration = Duration::from_millis(400);
-const LOGGED_IN_INTERVAL: Duration = Duration::from_secs(20);
 const LOGGED_OUT_INTERVAL: Duration = Duration::from_secs(8);
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -93,7 +92,8 @@ pub enum Work {
 }
 
 impl State {
-    pub fn prepare(&mut self) -> Work {
+    /// sync_interval：已登录时的同步间隔，由设置里的「同步间隔」决定
+    pub fn prepare(&mut self, sync_interval: Duration) -> Work {
         let now = Instant::now();
 
         if self.in_flight {
@@ -117,7 +117,7 @@ impl State {
         }
 
         let interval = if self.view.logged_in {
-            LOGGED_IN_INTERVAL
+            sync_interval
         } else {
             LOGGED_OUT_INTERVAL
         };
