@@ -49,7 +49,7 @@ export function dailyCostOf(view) {
   return week / days;
 }
 
-// 余额还能烧几天；没有消耗数据时返回 null
+// 余额还能烧多久；没有消耗数据时返回 null
 export function daysLeftOf(view) {
   const balance = Number(view?.balance);
   const cost = dailyCostOf(view);
@@ -57,7 +57,7 @@ export function daysLeftOf(view) {
   return Math.max(0, balance / cost);
 }
 
-// 还能烧几天 → 火势。对数插值：1 天内将熄，两周以上烈焰，中间连续过渡不跳档
+// 还能烧多久 → 火势。对数插值：1 天内将熄，两周以上烈焰，中间连续过渡不跳档
 function daysToIntensity(days) {
   const value = Math.max(0, Number(days) || 0);
   if (value <= DAYS_LOW) return MIN_INTENSITY;
@@ -66,7 +66,7 @@ function daysToIntensity(days) {
   return MIN_INTENSITY + t * (1 - MIN_INTENSITY);
 }
 
-// 有消耗数据就用"还能烧几天"，新用户还没花过钱时退回余额刻度，别一上来就熄着
+// 有消耗数据就用"还能烧多久"，新用户还没花过钱时退回余额刻度，别一上来就熄着
 function fireIntensity(balance, dailyCost) {
   const cost = Number(dailyCost) || 0;
   if (cost > 0.01) return daysToIntensity(Number(balance) / cost);

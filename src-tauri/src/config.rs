@@ -9,7 +9,7 @@ pub struct Config {
     /// 摆件大小：small | medium | large
     pub size: String,
     pub autostart: bool,
-    /// 火堆上的"还能烧几天"是否常显；关着就只在悬停时浮出来
+    /// 火堆上的"还能烧多久"是否常显；关着就只在悬停时浮出来
     pub hint_always: bool,
     pub x: Option<i32>,
     pub y: Option<i32>,
