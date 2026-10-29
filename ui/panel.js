@@ -1,5 +1,5 @@
 // 设置面板：自己一个窗口，管理 DeepSeek 登录、用量和摆件设置
-import { FireView, formatBalance, formatTokenCount } from "./fire-view.js";
+import { FireView, dailyCostOf, formatBalance, formatTokenCount } from "./fire-view.js";
 
 const POLL_MS = 500;
 const invoke = window.__TAURI__?.core?.invoke ?? null;
@@ -393,7 +393,7 @@ function renderUsage(view) {
   els.balance.textContent = loggedIn
     ? "余额 " + formatBalance(view.balance, view.currency)
     : "余额 --";
-  fire.setBalance(loggedIn ? view.balance : null, view.currency);
+  fire.setBalance(loggedIn ? view.balance : null, view.currency, dailyCostOf(view));
 
   const updated = timeText(view.updatedAt);
   els.usageHint.textContent = updated

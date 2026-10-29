@@ -281,3 +281,37 @@
 #alert:not([hidden]) ~ #readout {
   display: none;
 }
+
+/* 悬停火堆时浮在顶上的一行小字：这堆余额还能烧几天 */
+#hint {
+  position: absolute;
+  left: 50%;
+  top: 8px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: rgba(24, 16, 38, 0.72);
+  color: rgba(255, 206, 126, 0.92);
+  font-size: 10px;
+  letter-spacing: 0.4px;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translate(-50%, -2px);
+  transition: opacity 200ms ease, transform 200ms ease;
+  pointer-events: none;
+}
+
+#hint[hidden] {
+  display: none;
+}
+
+#ornament:hover #hint {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+@media (max-width: 132px) {
+  #hint {
+    font-size: 9px;
+    padding: 1px 5px;
+  }
+}

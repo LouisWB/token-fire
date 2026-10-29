@@ -1,5 +1,5 @@
 // 摆件窗口：只显示篝火和 DeepSeek 账户余额
-import { FireView } from "./fire-view.js";
+import { FireView, dailyCostOf, daysLeftOf } from "./fire-view.js";
 
 const POLL_MS = 1200;
 const invoke = window.__TAURI__?.core?.invoke ?? null;
@@ -7,6 +7,7 @@ const listen = window.__TAURI__?.event?.listen ?? null;
 
 const alertEl = document.getElementById("alert");
 const ornament = document.getElementById("ornament");
+const hintEl = document.getElementById("hint");
 
 const fire = new FireView({
   scene: document.getElementById("scene"),
@@ -44,6 +45,18 @@ function renderAlert(view) {
   alertEl.title = detail;
 }
 
+// 悬停火堆时浮出来的那行小字：按本周日均估算还能烧多久
+function renderHint(view) {
+  const days = !view?.error && view?.loggedIn ? daysLeftOf(view) : null;
+  if (days === null) {
+    hintEl.hidden = true;
+    return;
+  }
+  hintEl.hidden = false;
+  hintEl.textContent =
+    days >= 99 ? "余额充足" : "还能烧 " + (days < 10 ? days.toFixed(1) : Math.round(days)) + " 天";
+}
+
 async function poll() {
   if (!invoke || polling) {
     if (!invoke) renderAlert({ loggedIn: false, message: "没有 Tauri 环境" });
@@ -52,8 +65,9 @@ async function poll() {
   polling = true;
   try {
     const view = await invoke("deepseek_status");
-    fire.setBalance(view?.loggedIn ? view.balance : null, view?.currency);
+    fire.setBalance(view?.loggedIn ? view.balance : null, view?.currency, dailyCostOf(view));
     renderAlert(view);
+    renderHint(view);
   } catch (err) {
     fire.fade();
     renderAlert({ error: "读取失败：" + err });
@@ -91,8 +105,9 @@ async function boot() {
   if (listen) {
     await listen("deepseek-changed", (event) => {
       const view = event.payload;
-      fire.setBalance(view?.loggedIn ? view.balance : null, view?.currency);
+      fire.setBalance(view?.loggedIn ? view.balance : null, view?.currency, dailyCostOf(view));
       renderAlert(view);
+      renderHint(view);
     });
   }
   await poll();

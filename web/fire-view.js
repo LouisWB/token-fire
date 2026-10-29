@@ -8,6 +8,8 @@ const QUANT = 30;        // 火势量化成多少档
 const STATIC_QUANT = 8;  // 炭火变化很慢，单独粗量化，省点重绘
 const RENDER_MIN_MS = 55;
 const GLIDE_MS = 170;    // 火势趋近的时间常数
+const DAYS_LOW = 1;      // 只够烧 1 天：将熄
+const DAYS_HIGH = 14;    // 够烧两周：烈焰
 const BALANCE_MIN = 10;
 const BALANCE_MAX = 50;
 const MIN_INTENSITY = 0.08;
@@ -35,6 +37,40 @@ function balanceToIntensity(balance) {
   if (value <= BALANCE_MIN) return MIN_INTENSITY;
   if (value >= BALANCE_MAX) return 1;
   return MIN_INTENSITY + ((value - BALANCE_MIN) / (BALANCE_MAX - BALANCE_MIN)) * (1 - MIN_INTENSITY);
+}
+
+// 日均花费：costWeek 是本周累计，按本周已经过的天数折算，
+// 周一就把一周的钱除以 7 会严重高估余额能烧多久。没有消耗记录时返回 0
+export function dailyCostOf(view) {
+  const week = Number(view?.costWeek);
+  if (!Number.isFinite(week) || week <= 0) return 0;
+  const points = Array.isArray(view?.trends?.week) ? view.trends.week.length : 0;
+  const days = points > 0 && points <= 7 ? points : 7;
+  return week / days;
+}
+
+// 余额还能烧几天；没有消耗数据时返回 null
+export function daysLeftOf(view) {
+  const balance = Number(view?.balance);
+  const cost = dailyCostOf(view);
+  if (!Number.isFinite(balance) || cost <= 0) return null;
+  return Math.max(0, balance / cost);
+}
+
+// 还能烧几天 → 火势。对数插值：1 天内将熄，两周以上烈焰，中间连续过渡不跳档
+function daysToIntensity(days) {
+  const value = Math.max(0, Number(days) || 0);
+  if (value <= DAYS_LOW) return MIN_INTENSITY;
+  if (value >= DAYS_HIGH) return 1;
+  const t = Math.log(value / DAYS_LOW) / Math.log(DAYS_HIGH / DAYS_LOW);
+  return MIN_INTENSITY + t * (1 - MIN_INTENSITY);
+}
+
+// 有消耗数据就用"还能烧几天"，新用户还没花过钱时退回余额刻度，别一上来就熄着
+function fireIntensity(balance, dailyCost) {
+  const cost = Number(dailyCost) || 0;
+  if (cost > 0.01) return daysToIntensity(Number(balance) / cost);
+  return balanceToIntensity(balance);
 }
 
 // 与帧率无关的指数趋近，火势变化才顺滑
@@ -73,10 +109,10 @@ export class FireView {
     this.paint(0, true);
   }
 
-  /* 余额低于 10 元保持最小火，达到 50 元时为满火 */
-  setBalance(balance, currency = "CNY") {
+  /* 火势 = 余额 ÷ 近 7 天日均消耗：够烧 1 天是将熄，两周以上是烈焰 */
+  setBalance(balance, currency = "CNY", dailyCost = 0) {
     const available = balance !== null && balance !== undefined && Number.isFinite(Number(balance));
-    this.target = available ? balanceToIntensity(balance) : 0;
+    this.target = available ? fireIntensity(balance, dailyCost) : 0;
     if (this.rateEl) this.rateEl.textContent = formatBalance(balance, currency);
     if (this.unitEl) this.unitEl.textContent = currency;
   }
