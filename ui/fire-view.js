@@ -84,6 +84,23 @@ export function dailyCostOf(view) {
   return Math.max(todayCost, average);
 }
 
+// 最近三个有消费时段的平均花费：平台按小时聚合，没有逐次调用记录。
+// 今天还没消费时，用日均 ÷ 3（一天大约三个用量时段）兜底。
+export function costPerPeriodOf(view) {
+  const buckets = Array.isArray(view?.trends?.today) ? view.trends.today : [];
+  const recent = buckets
+    .filter((point) => point && Number(point.value) > 0)
+    .slice(-3);
+  if (recent.length) {
+    const total = recent.reduce((sum, point) => sum + Math.max(0, Number(point.value) || 0), 0);
+    const average = total / recent.length;
+    if (Number.isFinite(average) && average > 0) return average;
+  }
+
+  const daily = dailyCostOf(view);
+  return daily > 0 ? daily / 3 : 0;
+}
+
 // 余额还能烧多久；没有消耗数据时返回 null
 export function daysLeftOf(view) {
   const balance = Number(view?.balance);

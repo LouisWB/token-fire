@@ -1,5 +1,5 @@
 // 摆件窗口：只显示篝火和 DeepSeek 账户余额
-import { FireView, dailyCostOf, daysLeftOf } from "./fire-view.js";
+import { FireView, costPerPeriodOf, dailyCostOf } from "./fire-view.js";
 
 const POLL_MS = 1200;
 const invoke = window.__TAURI__?.core?.invoke ?? null;
@@ -56,31 +56,26 @@ function formatLeft(ms) {
   return mins + "分";
 }
 
-// 提示每秒钟走一格；只有余额或日均明显变了才重新对表，不然一直倒数
-let hintBase = null;
+// 提示不跟现实时间倒数：没在用 Token 的时候余额也不会自己变少。
+// 按最近三个时段的平均花费估还能用多少个时段（每段 1 小时），数据刷新时才重算。
+let hintMs = null;
 
 function paintHint() {
-  if (!hintBase) return;
-  const left = Math.max(0, hintBase.ms - (Date.now() - hintBase.at));
-  const text = left >= 99 * 86400000 ? "余额充足" : "约剩 " + formatLeft(left);
+  if (hintMs === null) return;
+  const text = hintMs >= 99 * 86400000 ? "余额充足" : "约剩 " + formatLeft(hintMs);
   if (hintEl.textContent !== text) hintEl.textContent = text;
 }
 
-// 悬停火堆时浮出来的那行小字：按日均估算还能撑多久
+// 悬停火堆时浮出来的那行小字：按最近三个时段的平均花费估还能用多久
 function renderHint(view) {
-  const days = !view?.error && view?.loggedIn ? daysLeftOf(view) : null;
-  if (days === null) {
-    hintEl.hidden = true;
-    hintBase = null;
-    return;
-  }
-  hintEl.hidden = false;
-
-  const ms = days * 86400000;
-  // 跟上次对表时的估算比，余额或日均真变了才重新对表，否则让它接着倒数
-  if (!hintBase || Math.abs(ms - hintBase.ms) > 120000) {
-    hintBase = { ms, at: Date.now() };
-  }
+  const usable = !view?.error && view?.loggedIn;
+  const perPeriod = usable ? costPerPeriodOf(view) : 0;
+  const balance = usable ? Number(view?.balance) : NaN;
+  hintMs =
+    Number.isFinite(balance) && perPeriod > 0
+      ? Math.max(0, balance / perPeriod) * 3600000
+      : null;
+  hintEl.hidden = hintMs === null;
   paintHint();
 }
 
@@ -152,7 +147,6 @@ async function boot() {
   }
   await poll();
   setInterval(poll, POLL_MS);
-  setInterval(paintHint, 1000);
   fire.start();
 }
 
