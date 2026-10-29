@@ -31,6 +31,7 @@ const els = {
   costTipCost: document.getElementById("cost-tip-cost"),
   sizes: document.getElementById("sizes"),
   autostart: document.getElementById("autostart"),
+  hintAlways: document.getElementById("hint-always"),
   status: document.getElementById("status"),
   head: document.getElementById("panel-head"),
   collapse: document.getElementById("collapse"),
@@ -71,7 +72,6 @@ const fire = new FireView({
   staticLayer: document.getElementById("preview-static"),
   sparks: document.getElementById("preview-sparks"),
   rateEl: document.getElementById("rate"),
-  unitEl: document.getElementById("unit"),
   glowEl: document.getElementById("preview-glow"),
   seed: 11,
 });
@@ -96,6 +96,7 @@ function applyConfig(cfg) {
   if (!cfg) return;
   size = SIZE_PRESETS.some((preset) => preset.key === cfg.size) ? cfg.size : "medium";
   els.autostart.checked = !!cfg.autostart;
+  els.hintAlways.checked = !!cfg.hintAlways;
   renderSizes();
 }
 
@@ -105,6 +106,7 @@ async function saveConfig() {
     await invoke("set_config", {
       size,
       autostart: els.autostart.checked,
+      hintAlways: els.hintAlways.checked,
     });
     setStatus("ok", "设置已保存");
   } catch (err) {
@@ -475,6 +477,7 @@ els.costTabs.addEventListener("click", (event) => {
 });
 els.collapse.addEventListener("click", close);
 els.autostart.addEventListener("change", saveConfig);
+els.hintAlways.addEventListener("change", saveConfig);
 els.quit.addEventListener("click", () => {
   if (invoke) invoke("quit_app");
 });

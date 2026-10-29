@@ -20,7 +20,7 @@ fn ornament_size(size: &str) -> (f64, f64) {
 /// 设置面板是独立窗口，尺寸固定。
 /// 这样右键开设置时篝火既不用改大小、也不用挪位置，面板还能自己挑个不挡路的地方待着
 const PANEL_W: f64 = 300.0;
-const PANEL_H: f64 = 766.0;
+const PANEL_H: f64 = 818.0;
 const PANEL_GAP: i32 = 12;
 
 pub struct AppState {
@@ -178,6 +178,7 @@ fn set_config(
     state: State<'_, AppState>,
     size: String,
     autostart: bool,
+    hint_always: bool,
 ) -> Result<config::Config, String> {
     let size_changed;
     let snapshot;
@@ -186,6 +187,7 @@ fn set_config(
         size_changed = cfg.size != size;
         cfg.size = size;
         cfg.autostart = autostart;
+        cfg.hint_always = hint_always;
         snapshot = cfg.clone();
         drop(cfg);
         config::save(&snapshot)?;

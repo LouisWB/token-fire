@@ -195,28 +195,11 @@
   transition: filter 200ms ease;
 }
 
-/* 币种平时隐去，鼠标放上去才浮出来；退出布局流，免得金额跟着偏 */
-#readout span {
-  position: absolute;
-  left: 100%;
-  top: 50%;
-  margin-left: 4px;
-  transform: translateY(-50%);
-  color: rgba(180, 152, 255, 0.85);
-  font-size: 8px;
-  letter-spacing: 1px;
-  opacity: 0;
-  transition: opacity 200ms ease;
-}
-
 #ornament:hover #readout b {
   filter: drop-shadow(0 0 6px rgba(255, 190, 90, 0.85))
     drop-shadow(0 0 16px rgba(160, 100, 255, 0.45));
 }
 
-#ornament:hover #readout span {
-  opacity: 0.9;
-}
 #ornament:hover #readout::before {
   opacity: 1;
 }
@@ -234,11 +217,6 @@
   #readout::before,
   #readout::after {
     display: none;
-  }
-  #readout span {
-    font-size: 7px;
-    letter-spacing: 0.4px;
-    color: rgba(212, 194, 255, 0.95);
   }
 }
 
@@ -286,7 +264,8 @@
 #hint {
   position: absolute;
   left: 50%;
-  top: 8px;
+  /* 贴在火焰尖端上方，火小了就跟着往下走；快到窗口顶时不再上移 */
+  top: max(20px, calc(var(--flame-top, 24px) - 6px));
   padding: 1px 7px;
   border-radius: 999px;
   background: rgba(24, 16, 38, 0.72);
@@ -295,8 +274,8 @@
   letter-spacing: 0.4px;
   white-space: nowrap;
   opacity: 0;
-  transform: translate(-50%, -2px);
-  transition: opacity 200ms ease, transform 200ms ease;
+  transform: translate(-50%, -100%);
+  transition: top 260ms ease, opacity 200ms ease;
   pointer-events: none;
 }
 
@@ -306,7 +285,11 @@
 
 #ornament:hover #hint {
   opacity: 1;
-  transform: translate(-50%, 0);
+}
+
+/* 设置里开了常显：不用悬停也一直挂着 */
+#ornament.hint-on #hint {
+  opacity: 1;
 }
 
 @media (max-width: 132px) {

@@ -79,12 +79,11 @@ function approach(current, target, factor) {
 }
 
 export class FireView {
-  constructor({ scene, staticLayer, sparks, rateEl, unitEl, glowEl, seed = 7 }) {
+  constructor({ scene, staticLayer, sparks, rateEl, glowEl, seed = 7 }) {
     this.scene = scene;
     this.staticLayer = staticLayer;
     this.sparks = sparks;
     this.rateEl = rateEl;
-    this.unitEl = unitEl;
     this.glowEl = glowEl;
     this.seed = seed;
     this.frames = [...scene.querySelectorAll("g.frame")];
@@ -114,7 +113,6 @@ export class FireView {
     const available = balance !== null && balance !== undefined && Number.isFinite(Number(balance));
     this.target = available ? fireIntensity(balance, dailyCost) : 0;
     if (this.rateEl) this.rateEl.textContent = formatBalance(balance, currency);
-    if (this.unitEl) this.unitEl.textContent = currency;
   }
 
   /* 读不到数据时让火慢慢熄掉，别一直烧着假火 */
@@ -188,5 +186,14 @@ export class FireView {
     rect.setAttribute("y", String(top));
     rect.setAttribute("width", String(box.w + pad * 2));
     rect.setAttribute("height", String(bottom - top));
+
+    // 顺手把火焰实心部分的顶端换算成像素交给提示气泡，火小了气泡跟着往下走
+    const ctm = this.scene.getScreenCTM?.();
+    const parent = this.scene.parentElement;
+    if (ctm && parent) {
+      const px = new DOMPoint(0, box.body).matrixTransform(ctm).y -
+        this.scene.getBoundingClientRect().top;
+      parent.style.setProperty("--flame-top", Math.max(0, px).toFixed(1) + "px");
+    }
   }
 }

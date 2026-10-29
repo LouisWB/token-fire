@@ -102,22 +102,32 @@ export function flameBounds(intensity, seed = 1, frameCount = 4) {
   let y0 = Infinity;
   let x1 = -Infinity;
   let y1 = -Infinity;
+  let body = Infinity;
 
   for (let frame = 0; frame < frameCount; frame++) {
     const grid = buildFlameLayer(intensity, frame, seed);
     for (let y = 0; y < grid.h; y++) {
+      let run = 0;
+      let widest = 0;
       for (let x = 0; x < grid.w; x++) {
-        if (grid.cells[y * grid.w + x] == null) continue;
+        if (grid.cells[y * grid.w + x] == null) {
+          run = 0;
+          continue;
+        }
+        run++;
+        if (run > widest) widest = run;
         if (x < x0) x0 = x;
         if (x > x1) x1 = x;
         if (y < y0) y0 = y;
         if (y > y1) y1 = y;
       }
+      // 尖端只有一两个像素，几乎看不见；记下真正撑开的行，提示气泡贴这里
+      if (widest >= 3 && y < body) body = y;
     }
   }
 
   if (x0 > x1) return null;
-  return { x: x0, y: y0, w: x1 - x0 + 1, h: y1 - y0 + 1 };
+  return { x: x0, y: y0, w: x1 - x0 + 1, h: y1 - y0 + 1, body: body === Infinity ? y0 : body };
 }
 
 export function staticLayerRects(intensity) {

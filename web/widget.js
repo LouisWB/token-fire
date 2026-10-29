@@ -14,7 +14,6 @@ const fire = new FireView({
   staticLayer: document.getElementById("static"),
   sparks: document.getElementById("sparks"),
   rateEl: document.getElementById("rate"),
-  unitEl: document.getElementById("unit"),
   glowEl: document.getElementById("glow"),
 });
 
@@ -45,16 +44,49 @@ function renderAlert(view) {
   alertEl.title = detail;
 }
 
+// 剩余时间写成人能直接读的天/时/分；天数太大就省掉分，别把胶囊撑爆
+function formatLeft(ms) {
+  const totalMin = Math.max(1, Math.round(ms / 60000));
+  const days = Math.floor(totalMin / 1440);
+  const hours = Math.floor((totalMin % 1440) / 60);
+  const mins = totalMin % 60;
+  if (days >= 10) return days + "天" + (hours ? hours + "时" : "");
+  if (days > 0) return days + "天" + (hours ? hours + "时" : "") + (mins ? mins + "分" : "");
+  if (hours > 0) return hours + "时" + (mins ? mins + "分" : "");
+  return mins + "分";
+}
+
+// 提示每秒钟走一格；只有余额或日均明显变了才重新对表，不然一直倒数
+let hintBase = null;
+
+function paintHint() {
+  if (!hintBase) return;
+  const left = Math.max(0, hintBase.ms - (Date.now() - hintBase.at));
+  const text = left >= 99 * 86400000 ? "余额充足" : "还能烧 " + formatLeft(left);
+  if (hintEl.textContent !== text) hintEl.textContent = text;
+}
+
 // 悬停火堆时浮出来的那行小字：按本周日均估算还能烧多久
 function renderHint(view) {
   const days = !view?.error && view?.loggedIn ? daysLeftOf(view) : null;
   if (days === null) {
     hintEl.hidden = true;
+    hintBase = null;
     return;
   }
   hintEl.hidden = false;
-  hintEl.textContent =
-    days >= 99 ? "余额充足" : "还能烧 " + (days < 10 ? days.toFixed(1) : Math.round(days)) + " 天";
+
+  const ms = days * 86400000;
+  // 跟上次对表时的估算比，余额或日均真变了才重新对表，否则让它接着倒数
+  if (!hintBase || Math.abs(ms - hintBase.ms) > 120000) {
+    hintBase = { ms, at: Date.now() };
+  }
+  paintHint();
+}
+
+// 设置里可以选常显；关着就只在悬停火堆时浮出来
+function applyConfig(cfg) {
+  ornament.classList.toggle("hint-on", !!cfg?.hintAlways);
 }
 
 async function poll() {
@@ -102,7 +134,15 @@ alertEl.addEventListener("mousedown", (event) => {
 
 async function boot() {
   fire.mount();
+  if (invoke) {
+    try {
+      applyConfig(await invoke("get_config"));
+    } catch (err) {
+      /* 读不到配置就按默认走 */
+    }
+  }
   if (listen) {
+    await listen("config-changed", (event) => applyConfig(event.payload));
     await listen("deepseek-changed", (event) => {
       const view = event.payload;
       fire.setBalance(view?.loggedIn ? view.balance : null, view?.currency, dailyCostOf(view));
@@ -112,6 +152,7 @@ async function boot() {
   }
   await poll();
   setInterval(poll, POLL_MS);
+  setInterval(paintHint, 1000);
   fire.start();
 }
 
