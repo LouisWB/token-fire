@@ -62,11 +62,11 @@ let hintBase = null;
 function paintHint() {
   if (!hintBase) return;
   const left = Math.max(0, hintBase.ms - (Date.now() - hintBase.at));
-  const text = left >= 99 * 86400000 ? "余额充足" : "还能烧 " + formatLeft(left);
+  const text = left >= 99 * 86400000 ? "余额充足" : "约剩 " + formatLeft(left);
   if (hintEl.textContent !== text) hintEl.textContent = text;
 }
 
-// 悬停火堆时浮出来的那行小字：按日均估算还能烧多久
+// 悬停火堆时浮出来的那行小字：按日均估算还能撑多久
 function renderHint(view) {
   const days = !view?.error && view?.loggedIn ? daysLeftOf(view) : null;
   if (days === null) {
