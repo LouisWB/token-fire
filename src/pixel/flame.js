@@ -103,7 +103,8 @@ export function drawFlame(grid, { intensity, frame = 0, seed = 1 }) {
   // 热度 = 横向离中轴多近 x 纵向烧了多深
   // 尖端偏暗、根部中轴最白，火芯才有往上窜的感觉
   // 火芯温度也拉开：快灭时只有暗红的芯，烧旺了才是白亮的心
-  const heatCeiling = 0.7 + 5.6 * it;
+  // 色温跟着火势走：小火只有暗红的芯，中火橙、旺火黄，满焰才有白心
+  const heatCeiling = 0.8 + 5.5 * Math.pow(it, 0.85);
   const span = Math.max(1, BASE_Y - topY);
 
   for (let y = topY; y <= BASE_Y; y++) {

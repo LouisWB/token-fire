@@ -444,12 +444,6 @@
   outline: none;
 }
 
-.field input::-webkit-outer-spin-button,
-.field input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-
 footer { margin-top: auto; padding-top: 8px; }
 
 #quit {

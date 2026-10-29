@@ -107,6 +107,7 @@ function applyConfig(cfg) {
 
 // 输入框里只留整数秒，超出范围按边界算
 function syncSecsOf(raw) {
+  if (String(raw ?? "").trim() === "") return SYNC_DEFAULT;
   const value = Math.round(Number(raw));
   if (!Number.isFinite(value)) return SYNC_DEFAULT;
   return Math.min(SYNC_MAX, Math.max(SYNC_MIN, value));
@@ -545,6 +546,11 @@ els.costTabs.addEventListener("click", (event) => {
 els.collapse.addEventListener("click", close);
 els.autostart.addEventListener("change", saveConfig);
 els.hintAlways.addEventListener("change", saveConfig);
+// 只收数字：中间输入法、粘贴进来的字母和负号都直接剔掉
+els.syncInterval.addEventListener("input", () => {
+  const digits = els.syncInterval.value.replace(/\D/g, "").slice(0, 4);
+  if (digits !== els.syncInterval.value) els.syncInterval.value = digits;
+});
 els.syncInterval.addEventListener("change", saveConfig);
 els.quit.addEventListener("click", () => {
   if (invoke) invoke("quit_app");
