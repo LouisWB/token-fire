@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "像素篝火桌面摆件：火焰跟随 DeepSeek 账户余额",
+  "description": "像素篝火桌面摆件：火焰跟随 DeepSeek 余额还能烧多久变化",
   "scripts": {
     "art": "node scripts/build-campfire.mjs",
     "icons": "node scripts/make-icons.mjs",

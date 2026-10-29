@@ -1,7 +1,7 @@
 [package]
 name = "token-fire"
 version = "0.1.0"
-description = "像素篝火桌面摆件：火焰跟随 DeepSeek 账户余额"
+description = "像素篝火桌面摆件：火焰跟随 DeepSeek 余额还能烧多久变化"
 edition = "2021"
 rust-version = "1.77"
 
