@@ -324,7 +324,59 @@ function drawCostChart(points, currency) {
     "vector-effect": "non-scaling-stroke",
   });
   const [lastX, lastY] = coords[coords.length - 1];
-  node("circle", { cx: lastX.toFixed(2), cy: lastY.toFixed(2), r: 2.6, fill: "#ffd79a" });
+  node("circle", { cx: lastX.toFixed(2), cy: lastY.toFixed(2), r: 3, class: "cost-node" });
+
+  // 金额常显：按文字实际宽度留间距，峰值与最后一个点优先，其余按金额从高到低补齐
+  const texts = points.map((point) =>
+    point.value > 0 ? formatCost(point.value, chartCurrency) : ""
+  );
+  const halfOf = (text) => (text.length * 4.5 + 6) / 2;
+  const placed = [];
+  const label = (index) => {
+    const text = texts[index];
+    if (!text || placed.some((other) => other.index === index)) return;
+    const half = halfOf(text);
+    const px = Math.min(
+      CHART_W - CHART_PAD_X - half,
+      Math.max(CHART_PAD_X + half, coords[index][0])
+    );
+    if (placed.some((other) => Math.abs(other.x - px) < other.half + half + 4)) return;
+    placed.push({ index, x: px, half });
+    const prev = points[index - 1];
+    const next = points[index + 1];
+    const value = points[index].value;
+    const valley =
+      prev && next && value < prev.value && value < next.value;
+    const y = valley
+      ? Math.min(CHART_H - 3, coords[index][1] + 8)
+      : Math.max(7.5, coords[index][1] - 5.5);
+    if (index !== points.length - 1) {
+      node("circle", {
+        cx: coords[index][0].toFixed(2),
+        cy: coords[index][1].toFixed(2),
+        r: 2.6,
+        class: "cost-node",
+      });
+    }
+    const textEl = node("text", {
+      x: px.toFixed(2),
+      y: y.toFixed(2),
+      class: "cost-value",
+      "text-anchor": "middle",
+    });
+    textEl.textContent = text;
+  };
+
+  let peakIndex = 0;
+  points.forEach((point, index) => {
+    if (point.value > points[peakIndex].value) peakIndex = index;
+  });
+  label(peakIndex);
+  label(points.length - 1);
+  const byValue = points
+    .map((point, index) => index)
+    .sort((a, b) => points[b].value - points[a].value);
+  byValue.forEach(label);
 
   const midIndex = Math.floor((points.length - 1) / 2);
   els.costAxisStart.textContent = formatAxisLabel(points[0].label);

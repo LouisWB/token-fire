@@ -9,7 +9,7 @@ const LOGIN_URL: &str = "https://platform.deepseek.com/sign_in";
 const USAGE_URL: &str = "https://platform.deepseek.com/usage";
 const SYNC_TIMEOUT: Duration = Duration::from_secs(15);
 const PROBE_INTERVAL: Duration = Duration::from_millis(400);
-const LOGGED_IN_INTERVAL: Duration = Duration::from_secs(60);
+const LOGGED_IN_INTERVAL: Duration = Duration::from_secs(20);
 const LOGGED_OUT_INTERVAL: Duration = Duration::from_secs(8);
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

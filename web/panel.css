@@ -252,6 +252,27 @@
 
 .cost-chart-wrap { position: relative; }
 
+/* 图上常显的节点金额：小字 + 描边光晕，压在折线上也看得清 */
+.cost-value {
+  fill: rgba(255, 214, 158, 0.9);
+  font-size: 7.5px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.2px;
+  paint-order: stroke;
+  stroke: rgba(16, 15, 21, 0.72);
+  stroke-width: 1.6px;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+
+/* 带金额的节点：亮色圆点加深色描边，从折线里跳出来 */
+.cost-node {
+  fill: #fff0cf;
+  stroke: rgba(28, 20, 12, 0.95);
+  stroke-width: 1.3px;
+  pointer-events: none;
+}
+
 #cost-chart {
   display: block;
   width: 100%;
