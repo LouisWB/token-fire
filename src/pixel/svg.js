@@ -16,16 +16,16 @@ export function runsToSvg(grid) {
   return parts.join("");
 }
 
-// 往上飘的火星，数量和高低都跟着强度走
-export function sparksToSvg({ intensity, seed = 1, originX = 22, originY = 25 }) {
+// 往上飘的火星，数量和高低都跟着强度走；count 可以预先多生成一些，交给显示层控制密度
+export function sparksToSvg({ intensity, seed = 1, originX = 22, originY = 25, count }) {
   const it = Math.max(0, Math.min(1, intensity));
-  const count = Math.round(it * 10);
-  if (count <= 0) return "";
+  const total = count === undefined ? Math.round(it * 10) : Math.max(0, Math.round(count));
+  if (total <= 0) return "";
 
   const rand = mulberry32(seed * 31337 + 11);
   const parts = [];
 
-  for (let i = 0; i < count; i++) {
+  for (let i = 0; i < total; i++) {
     const life = 1.8 + rand() * 1.6;
     const begin = -(rand() * life).toFixed(2);
     const sx = originX + (rand() - 0.5) * (6 + 6 * it);
@@ -54,6 +54,7 @@ export function buildCampfireSVG({
   frameCount = 4,
   seed = 1,
   fps = 14,
+  liveliness = 0.5,
   background = null,
   withSparks = true,
   sparks = true,
@@ -66,7 +67,7 @@ export function buildCampfireSVG({
     const values = Array.from({ length: frameCount }, (_, i) => (i === f ? 1 : 0)).join(";");
     frames.push(
       `<g><animate attributeName="opacity" calcMode="discrete" values="${values}" dur="${dur}s" repeatCount="indefinite"/>` +
-        runsToSvg(buildFlameLayer(intensity, f, seed)) +
+        runsToSvg(buildFlameLayer(intensity, f, seed, liveliness)) +
         `</g>`,
     );
   }
@@ -91,13 +92,13 @@ export function buildCampfireSVG({
 }
 
 // 只要火焰那几帧，摆件每帧热替换用
-export function flameFrameRects(intensity, frame, seed = 1) {
-  return runsToSvg(buildFlameLayer(intensity, frame, seed));
+export function flameFrameRects(intensity, frame, seed = 1, liveliness = 0.5) {
+  return runsToSvg(buildFlameLayer(intensity, frame, seed, liveliness));
 }
 
 // 三四帧火焰合起来的外框（像素坐标）：摆件拿它当拖拽热区，
 // 火小的时候热区就跟着缩回炉口，不会在上面留一大片能拖的空白
-export function flameBounds(intensity, seed = 1, frameCount = 4) {
+export function flameBounds(intensity, seed = 1, frameCount = 4, liveliness = 0.5) {
   let x0 = Infinity;
   let y0 = Infinity;
   let x1 = -Infinity;
@@ -105,7 +106,7 @@ export function flameBounds(intensity, seed = 1, frameCount = 4) {
   let body = Infinity;
 
   for (let frame = 0; frame < frameCount; frame++) {
-    const grid = buildFlameLayer(intensity, frame, seed);
+    const grid = buildFlameLayer(intensity, frame, seed, liveliness);
     for (let y = 0; y < grid.h; y++) {
       let run = 0;
       let widest = 0;

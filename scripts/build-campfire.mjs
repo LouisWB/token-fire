@@ -21,7 +21,7 @@ const cards = LEVELS.map((lv, i) => {
       ${svg}
       <figcaption>
         <b>${lv.label}</b>
-        <span>余额 ¥${lv.balance}</span>
+        <span>余额 ¥${lv.balance}（对数刻度）</span>
         <em>intensity ${lv.intensity.toFixed(2)}</em>
       </figcaption>
     </figure>`;
@@ -70,7 +70,7 @@ const html = `<!DOCTYPE html>
 </head>
 <body>
   <h1>像素篝火 · 强度档位</h1>
-  <p class="sub">same SVG, different intensity — 火焰高矮宽窄和火芯温度都跟着走</p>
+  <p class="sub">same SVG, different intensity — 火焰高矮宽窄和火芯温度都跟着走；默认余额区间 1 - 1000 元</p>
   <div class="grid">${cards}
   </div>
 </body>

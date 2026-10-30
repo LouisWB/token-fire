@@ -180,8 +180,8 @@ fn set_config(
     size: String,
     autostart: bool,
     hint_always: bool,
-    hint_mode: String,
-    tokens_per_call: u32,
+    fire_min: f64,
+    fire_max: f64,
     sync_interval_secs: u64,
 ) -> Result<config::Config, String> {
     let size_changed;
@@ -192,16 +192,12 @@ fn set_config(
         cfg.size = size;
         cfg.autostart = autostart;
         cfg.hint_always = hint_always;
-        // 只认两个合法口径，别让前端传进来的怪值把气泡弄哑
-        cfg.hint_mode = if hint_mode == "count" {
-            "count".to_string()
-        } else {
-            "time".to_string()
-        };
-        cfg.tokens_per_call = tokens_per_call
-            .clamp(config::TOKENS_PER_CALL_MIN, config::TOKENS_PER_CALL_MAX);
+        let (fire_min, fire_max) = config::sanitize_fire_range(fire_min, fire_max);
+        cfg.fire_min = fire_min;
+        cfg.fire_max = fire_max;
         cfg.sync_interval_secs =
             sync_interval_secs.clamp(config::SYNC_SECS_MIN, config::SYNC_SECS_MAX);
+        cfg.sanitize();
         snapshot = cfg.clone();
         drop(cfg);
         config::save(&snapshot)?;

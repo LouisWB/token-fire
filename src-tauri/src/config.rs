@@ -9,10 +9,11 @@ pub const SYNC_SECS_MIN: u64 = 5;
 pub const SYNC_SECS_MAX: u64 = 3600;
 pub const SYNC_SECS_DEFAULT: u64 = 20;
 
-/// 换算「一次」用的 token 预算：面板里三档可选，超出范围按边界算
-pub const TOKENS_PER_CALL_MIN: u32 = 2_000;
-pub const TOKENS_PER_CALL_MAX: u32 = 2_000_000;
-pub const TOKENS_PER_CALL_DEFAULT: u32 = 32_000;
+/// 火势区间的默认值：余额 ≤ 1 元最小火，≥ 1000 元满焰，中间按对数插值
+pub const FIRE_MIN_DEFAULT: f64 = 1.0;
+pub const FIRE_MAX_DEFAULT: f64 = 1000.0;
+pub const FIRE_MIN_FLOOR: f64 = 0.01;
+pub const FIRE_MAX_CEIL: f64 = 1_000_000_000.0;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default, rename_all = "camelCase")]
@@ -20,12 +21,12 @@ pub struct Config {
     /// 摆件大小：small | medium | large
     pub size: String,
     pub autostart: bool,
-    /// 火堆上的"还能烧多久"是否常显；关着就只在悬停时浮出来
+    /// 火堆上的剩余 token 气泡是否常显；关着就只在悬停时浮出来
     pub hint_always: bool,
-    /// 气泡显示口径：time 剩余时间 / count 剩余 token
-    pub hint_mode: String,
-    /// 旧的「按一次多少 token 折算」预算，已不参与计算，仅为兼容已有配置文件保留
-    pub tokens_per_call: u32,
+    /// 火势区间下限：余额低于它时最小火
+    pub fire_min: f64,
+    /// 火势区间上限：余额高于它时满焰
+    pub fire_max: f64,
     /// 已登录后的同步间隔（秒）
     pub sync_interval_secs: u64,
     pub x: Option<i32>,
@@ -36,6 +37,17 @@ impl Config {
     pub fn sync_interval(&self) -> Duration {
         Duration::from_secs(self.sync_interval_secs.clamp(SYNC_SECS_MIN, SYNC_SECS_MAX))
     }
+
+    /// 配置文件可能被手改过；读进来先收一遍，别让怪值把火势或同步弄哑
+    pub fn sanitize(&mut self) {
+        if !matches!(self.size.as_str(), "small" | "medium" | "large") {
+            self.size = "medium".to_string();
+        }
+        let (min, max) = sanitize_fire_range(self.fire_min, self.fire_max);
+        self.fire_min = min;
+        self.fire_max = max;
+        self.sync_interval_secs = self.sync_interval_secs.clamp(SYNC_SECS_MIN, SYNC_SECS_MAX);
+    }
 }
 
 impl Default for Config {
@@ -44,12 +56,31 @@ impl Default for Config {
             size: "medium".to_string(),
             autostart: false,
             hint_always: false,
-            hint_mode: "time".to_string(),
-            tokens_per_call: TOKENS_PER_CALL_DEFAULT,
+            fire_min: FIRE_MIN_DEFAULT,
+            fire_max: FIRE_MAX_DEFAULT,
             sync_interval_secs: SYNC_SECS_DEFAULT,
             x: None,
             y: None,
         }
+    }
+}
+
+/// 区间必须是一个正的、上界大于下界的区间；不合法就退回默认的 1 - 1000
+pub fn sanitize_fire_range(min: f64, max: f64) -> (f64, f64) {
+    let min = if min.is_finite() && min > 0.0 {
+        min.clamp(FIRE_MIN_FLOOR, FIRE_MAX_CEIL)
+    } else {
+        FIRE_MIN_DEFAULT
+    };
+    let max = if max.is_finite() && max > 0.0 {
+        max.clamp(FIRE_MIN_FLOOR, FIRE_MAX_CEIL)
+    } else {
+        FIRE_MAX_DEFAULT
+    };
+    if max <= min {
+        (FIRE_MIN_DEFAULT, FIRE_MAX_DEFAULT)
+    } else {
+        (min, max)
     }
 }
 
@@ -68,7 +99,11 @@ pub fn exists() -> bool {
 pub fn load() -> Config {
     let file = path();
     match fs::read_to_string(&file) {
-        Ok(text) => serde_json::from_str(&text).unwrap_or_default(),
+        Ok(text) => {
+            let mut config: Config = serde_json::from_str(&text).unwrap_or_default();
+            config.sanitize();
+            config
+        }
         Err(_) => Config::default(),
     }
 }

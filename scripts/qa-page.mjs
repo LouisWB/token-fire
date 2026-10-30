@@ -32,8 +32,17 @@ function flatten(files) {
   for (const file of files) {
     const lines = readFileSync(resolve(root, file), "utf8").split(CRLF).join(LF).split(LF);
     const kept = [];
+    let inImport = false;
     for (const line of lines) {
-      if (/^\s*import\s/.test(line)) continue;
+      // import 可能跨多行，整段丢掉，不能只删第一行
+      if (inImport) {
+        if (/;\s*$/.test(line)) inImport = false;
+        continue;
+      }
+      if (/^\s*import\b/.test(line)) {
+        if (!/;\s*$/.test(line)) inImport = true;
+        continue;
+      }
       if (/^\s*export\s*\{/.test(line)) continue;
       kept.push(line.replace(/^export\s+(const|function|class|let)\b/, "$1"));
     }
@@ -46,6 +55,8 @@ const CONFIG = {
   size: "medium",
   autostart: true,
   hintAlways: !!process.env.QA_HINT,
+  fireMin: Number(process.env.QA_FIRE_MIN || 1),
+  fireMax: Number(process.env.QA_FIRE_MAX || 1000),
   syncIntervalSecs: Number(process.env.QA_SYNC || 20),
   x: null,
   y: null,

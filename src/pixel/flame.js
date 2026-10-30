@@ -45,13 +45,17 @@ function tongueCells(spec) {
 }
 
 // 按强度决定长几根火舌、各多高。行号一律取整，否则写不进像素掩码
-// rand 每帧换一次，所以这里所有随机量都是"火苗在跳"的来源
-function tongueSpecs(intensity, rand) {
+// rand 每帧换一次，所以这里所有随机量都是"火苗在跳"的来源；
+// liveliness 控制抖动幅度：今天没怎么用 token 时火苗更稳，用得多时跳得更活
+function tongueSpecs(intensity, rand, liveliness) {
   const it = intensity;
-  const jitter = (amp) => (rand() - 0.5) * amp;
+  const live = clamp01(liveliness);
+  const bounce = 0.45 + 0.55 * live;
+  const jitter = (amp) => (rand() - 0.5) * amp * bounce;
+  const heightNoise = 0.10 + 0.16 * live;
 
   // 高矮差拉大：快灭的时候只剩一小撮，烧旺了能顶到画面顶部
-  const height = (6.5 + 21 * it) * (0.86 + 0.28 * rand());
+  const height = (6.5 + 21 * it) * (1 + (rand() - 0.5) * heightNoise);
   const specs = [];
 
   // 主火舌：火苗主体，每帧高度和左右位置都飘一点
@@ -59,20 +63,21 @@ function tongueSpecs(intensity, rand) {
     cx: CENTER_X + jitter(1.8),
     tipY: BASE_Y - Math.round(height),
     baseY: BASE_Y,
-    baseW: (5.5 + 7.5 * it) * (0.9 + 0.2 * rand()),
+    baseW: (5.5 + 7.5 * it) * (1 + (rand() - 0.5) * (0.08 + 0.12 * live)),
   });
 
   // 两根副火舌，只长到主火舌一半高，贴着主体形成锯齿顶
   const side = 3.2 + 2.2 * it;
+  const sideNoise = 0.16 + 0.16 * live;
   specs.push({
     cx: CENTER_X - side + jitter(2.2),
-    tipY: BASE_Y - Math.round(height * (0.30 + 0.24 * rand())),
+    tipY: BASE_Y - Math.round(height * (0.30 + sideNoise * rand())),
     baseY: BASE_Y,
     baseW: 2 + 2.6 * it,
   });
   specs.push({
     cx: CENTER_X + side + jitter(2.2),
-    tipY: BASE_Y - Math.round(height * (0.26 + 0.24 * rand())),
+    tipY: BASE_Y - Math.round(height * (0.26 + sideNoise * rand())),
     baseY: BASE_Y,
     baseW: 2 + 2.6 * it,
   });
@@ -81,7 +86,7 @@ function tongueSpecs(intensity, rand) {
 }
 
 // 把火焰画进网格。intensity 0..1，frame 用来抖出不同的动画帧
-export function drawFlame(grid, { intensity, frame = 0, seed = 1 }) {
+export function drawFlame(grid, { intensity, frame = 0, seed = 1, liveliness = 0.5 }) {
   const it = clamp01(intensity);
   if (it <= 0.001) return;
 
@@ -91,7 +96,7 @@ export function drawFlame(grid, { intensity, frame = 0, seed = 1 }) {
   const mask = new Uint8Array(w * grid.h);
   let topY = BASE_Y;
 
-  for (const spec of tongueSpecs(it, rand)) {
+  for (const spec of tongueSpecs(it, rand, liveliness)) {
     if (spec.tipY < topY) topY = spec.tipY;
     for (const [x, y] of tongueCells(spec)) {
       if (y > BASE_Y || x < 0 || x >= w || y < 0) continue;

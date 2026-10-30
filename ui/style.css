@@ -260,7 +260,7 @@
   display: none;
 }
 
-/* 悬停火堆时浮在顶上的一行小字：这堆余额还能烧多久 */
+/* 悬停火堆时浮在顶上的一行小字：余额还能买多少 token */
 #hint {
   position: absolute;
   left: 50%;

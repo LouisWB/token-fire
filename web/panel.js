@@ -1,5 +1,5 @@
 // 设置面板：自己一个窗口，管理 DeepSeek 登录、用量和摆件设置
-import { FireView, dailyCostOf, formatBalance, formatTokenCount } from "./fire-view.js";
+import { FireView, activityOf, formatBalance, formatTokenCount } from "./fire-view.js";
 
 const POLL_MS = 500;
 const SYNC_MIN = 5;
@@ -35,7 +35,8 @@ const els = {
   sizes: document.getElementById("sizes"),
   autostart: document.getElementById("autostart"),
   hintAlways: document.getElementById("hint-always"),
-  hintMode: document.getElementById("hint-mode"),
+  fireMin: document.getElementById("fire-min"),
+  fireMax: document.getElementById("fire-max"),
   syncInterval: document.getElementById("sync-interval"),
   status: document.getElementById("status"),
   head: document.getElementById("panel-head"),
@@ -49,11 +50,6 @@ const SIZE_PRESETS = [
   { key: "large", label: "大" },
 ];
 
-const HINT_MODES = [
-  { key: "time", label: "剩余时间" },
-  { key: "count", label: "剩余 token" },
-];
-
 const COST_RANGES = [
   { key: "today", field: "costToday", trend: "today" },
   { key: "week", field: "costWeek", trend: "week" },
@@ -62,8 +58,8 @@ const COST_RANGES = [
 ];
 
 let size = "medium";
-let hintMode = "time";
-let tokensPerCall = 32000;
+let fireMin = 1;
+let fireMax = 1000;
 let refreshing = false;
 let lastView = null;
 let costRange = "today";
@@ -104,33 +100,27 @@ function renderSizes() {
   }
 }
 
-function renderHintMode() {
-  els.hintMode.innerHTML = "";
-  for (const mode of HINT_MODES) {
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.textContent = mode.label;
-    btn.classList.toggle("on", mode.key === hintMode);
-    btn.addEventListener("click", () => {
-      hintMode = mode.key;
-      renderHintMode();
-      saveConfig();
-    });
-    els.hintMode.appendChild(btn);
-  }
+// 火势区间：默认 1 - 1000 元，两项都必须是正数，且上界大于下界
+function fireRangeOf(min, max) {
+  const low = Number(min);
+  const high = Number(max);
+  if (!Number.isFinite(low) || !Number.isFinite(high) || low <= 0 || high <= low) return null;
+  return { min: low, max: high };
 }
 
 function applyConfig(cfg) {
   if (!cfg) return;
   size = SIZE_PRESETS.some((preset) => preset.key === cfg.size) ? cfg.size : "medium";
-  hintMode = HINT_MODES.some((mode) => mode.key === cfg.hintMode) ? cfg.hintMode : "time";
-  const tokens = Number(cfg.tokensPerCall);
-  tokensPerCall = Number.isFinite(tokens) && tokens > 0 ? tokens : 32000;
+  const range = fireRangeOf(cfg.fireMin, cfg.fireMax);
+  fireMin = range ? range.min : 1;
+  fireMax = range ? range.max : 1000;
+  els.fireMin.value = String(fireMin);
+  els.fireMax.value = String(fireMax);
   els.autostart.checked = !!cfg.autostart;
   els.hintAlways.checked = !!cfg.hintAlways;
   els.syncInterval.value = String(syncSecsOf(cfg.syncIntervalSecs));
+  fire.setScale(fireMin, fireMax);
   renderSizes();
-  renderHintMode();
 }
 
 // 输入框里只留整数秒，超出范围按边界算
@@ -143,17 +133,28 @@ function syncSecsOf(raw) {
 
 async function saveConfig() {
   if (!invoke) return;
+  const range = fireRangeOf(els.fireMin.value, els.fireMax.value);
+  if (!range) {
+    els.fireMin.value = String(fireMin);
+    els.fireMax.value = String(fireMax);
+    setStatus("bad", "火势区间：最低余额要大于 0，满焰要大于最低余额");
+    return;
+  }
+  fireMin = range.min;
+  fireMax = range.max;
+
   const syncIntervalSecs = syncSecsOf(els.syncInterval.value);
   els.syncInterval.value = String(syncIntervalSecs);
   try {
-    await invoke("set_config", {
+    const saved = await invoke("set_config", {
       size,
       autostart: els.autostart.checked,
       hintAlways: els.hintAlways.checked,
-      hintMode,
-      tokensPerCall,
+      fireMin,
+      fireMax,
       syncIntervalSecs,
     });
+    applyConfig(saved);
     setStatus("ok", "设置已保存");
   } catch (err) {
     setStatus("bad", "保存设置失败：" + err);
@@ -493,7 +494,7 @@ function renderUsage(view) {
   els.balance.textContent = loggedIn
     ? "余额 " + formatBalance(view.balance, view.currency)
     : "余额 --";
-  fire.setBalance(loggedIn ? view.balance : null, view.currency, dailyCostOf(view));
+  fire.setBalance(loggedIn ? view.balance : null, view.currency, activityOf(view));
 
   const updated = timeText(view.updatedAt);
   els.usageHint.textContent = updated
@@ -576,6 +577,20 @@ els.costTabs.addEventListener("click", (event) => {
 els.collapse.addEventListener("click", close);
 els.autostart.addEventListener("change", saveConfig);
 els.hintAlways.addEventListener("change", saveConfig);
+// 只收数字和一个小数点：中间输入法、粘贴进来的字母和负号都直接剔掉
+function cleanDecimal(value) {
+  const cleaned = value.replace(/[^\d.]/g, "");
+  const dot = cleaned.indexOf(".");
+  if (dot < 0) return cleaned;
+  return cleaned.slice(0, dot + 1) + cleaned.slice(dot + 1).replace(/\./g, "");
+}
+for (const input of [els.fireMin, els.fireMax]) {
+  input.addEventListener("input", () => {
+    const cleaned = cleanDecimal(input.value);
+    if (cleaned !== input.value) input.value = cleaned;
+  });
+  input.addEventListener("change", saveConfig);
+}
 // 只收数字：中间输入法、粘贴进来的字母和负号都直接剔掉
 els.syncInterval.addEventListener("input", () => {
   const digits = els.syncInterval.value.replace(/\D/g, "").slice(0, 4);
@@ -596,6 +611,7 @@ async function boot() {
   fire.mount();
   if (listen) {
     await listen("deepseek-changed", (event) => renderUsage(event.payload));
+    await listen("config-changed", (event) => applyConfig(event.payload));
   }
 
   if (invoke) {
@@ -603,11 +619,9 @@ async function boot() {
       applyConfig(await invoke("get_config"));
     } catch (err) {
       renderSizes();
-      renderHintMode();
     }
   } else {
     renderSizes();
-    renderHintMode();
     setStatus("warn", "没有 Tauri 环境，看到的只是界面");
   }
 

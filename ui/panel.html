@@ -106,14 +106,45 @@
         </div>
 
         <div class="group">
+          <div class="group-head">
+            <h2>火势区间</h2>
+            <span class="group-note">对数刻度</span>
+          </div>
+          <div class="field-row">
+            <label class="field">
+              <span>最低 ¥</span>
+              <input
+                id="fire-min"
+                type="text"
+                inputmode="decimal"
+                maxlength="10"
+                autocomplete="off"
+                aria-label="最低余额（元）"
+              />
+            </label>
+            <label class="field">
+              <span>满焰 ¥</span>
+              <input
+                id="fire-max"
+                type="text"
+                inputmode="decimal"
+                maxlength="10"
+                autocomplete="off"
+                aria-label="满焰余额（元）"
+              />
+            </label>
+          </div>
+          <span class="group-note">余额 ≤ 最低时最小火，≥ 满焰时满焰，默认 1 - 1000</span>
+        </div>
+
+        <div class="group">
           <h2>提示</h2>
           <label class="switch">
             <input type="checkbox" id="hint-always" />
             <span class="track"><span class="knob"></span></span>
-            <span class="label">常显剩余提示</span>
+            <span class="label">常显剩余 token</span>
           </label>
-          <div id="hint-mode" class="options row"></div>
-          <span class="group-note">「剩余 token」按今天实际的每 token 均价折算</span>
+          <span class="group-note">今天每 token 均价折算，缺数据时用本周</span>
         </div>
 
         <div class="group">

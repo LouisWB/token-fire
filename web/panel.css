@@ -438,6 +438,27 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* 两个数字框并排：火势区间的上下限 */
+.field-row {
+  display: flex;
+  gap: 6px;
+}
+
+.field-row .field {
+  flex: 1;
+  min-width: 0;
+  gap: 5px;
+  padding: 6px 8px;
+}
+
+.field-row .field span {
+  color: #9a9aab;
+  font-size: 10.5px;
+  white-space: nowrap;
+}
+
+.field-row .field input { min-width: 0; }
+
 /* 数字输入：同步间隔之类只填一个数的设置 */
 .field {
   display: flex;
