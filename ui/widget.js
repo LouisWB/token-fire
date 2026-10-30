@@ -1,5 +1,13 @@
 // 摆件窗口：只显示篝火和 DeepSeek 账户余额
-import { FireView, costPerPeriodOf, dailyCostOf } from "./fire-view.js";
+import {
+  FireView,
+  periodStatsOf,
+  dailyCostOf,
+  tokensLeftOf,
+  unitCostOf,
+  formatBalance,
+  formatTokenCount,
+} from "./fire-view.js";
 
 const POLL_MS = 1200;
 const invoke = window.__TAURI__?.core?.invoke ?? null;
@@ -57,31 +65,91 @@ function formatLeft(ms) {
 }
 
 // 提示不跟现实时间倒数：没在用 Token 的时候余额也不会自己变少。
-// 按最近三个时段的平均花费估还能用多少个时段（每段 1 小时），数据刷新时才重算。
+// 按今天已经走完的活跃小时的平均花费估还能用多久，数据刷新时才重算。
 let hintMs = null;
+let hintTokens = null;
+let hintUnitText = "";
+let hintDetail = "";
+let hintMode = "time";
+let lastView = null;
 
+// 口径由设置决定：剩余时间按小时折天，剩余 token 按每 token 均价折算成还能买多少量
 function paintHint() {
-  if (hintMs === null) return;
-  const text = hintMs >= 99 * 86400000 ? "余额充足" : "约剩 " + formatLeft(hintMs);
-  if (hintEl.textContent !== text) hintEl.textContent = text;
+  let text = null;
+  if (hintMode === "count") {
+    if (hintTokens !== null) {
+      if (hintTokens >= 1e9) text = "余额充足";
+      else if (hintTokens < 1) text = "不足 1 tok";
+      else text = "约能烧 " + formatTokenCount(hintTokens) + " tok";
+    }
+  } else if (hintMs !== null) {
+    text = hintMs >= 99 * 86400000 ? "余额充足" : "约能烧 " + formatLeft(hintMs);
+  }
+
+  hintEl.hidden = text === null;
+  if (text !== null && hintEl.textContent !== text) hintEl.textContent = text;
+
+  // 数字是折算出来的，口径必须写在 title 里，不然这个结论没有出处
+  const title =
+    hintMode === "count"
+      ? "按今天各时段的真实花费与 token 折算，每百万 token 约 " +
+        hintUnitText +
+        "，余额还能烧约 " +
+        formatTokenCount(hintTokens) +
+        " tok"
+      : hintDetail;
+  if (hintEl.title !== title) hintEl.title = title;
 }
 
-// 悬停火堆时浮出来的那行小字：按最近三个时段的平均花费估还能用多久
+// 悬停火堆时浮出来的那行小字：两种口径每次都一起算好，切换时不用等下一次同步
 function renderHint(view) {
+  lastView = view;
   const usable = !view?.error && view?.loggedIn;
-  const perPeriod = usable ? costPerPeriodOf(view) : 0;
+  const stats = usable
+    ? periodStatsOf(view)
+    : { hours: 0, total: 0, perPeriod: 0, fallback: true };
+  const perPeriod = stats.perPeriod;
   const balance = usable ? Number(view?.balance) : NaN;
   hintMs =
     Number.isFinite(balance) && perPeriod > 0
       ? Math.max(0, balance / perPeriod) * 3600000
       : null;
-  hintEl.hidden = hintMs === null;
+  const unit = usable ? unitCostOf(view) : null;
+  hintTokens = usable ? tokensLeftOf(view) : null;
+  hintUnitText = unit > 0 ? formatBalance(unit * 1000000, view?.currency) : "";
+  hintDetail = describePeriods(stats, balance, view?.currency);
   paintHint();
 }
 
-// 设置里可以选常显；关着就只在悬停火堆时浮出来
+// 把算式摊开写：用了几个活跃小时、平均每小时多少、余额多少，方便直接核对
+function describePeriods(stats, balance, currency) {
+  if (!(stats.perPeriod > 0)) return "今天还没有用量，先按余额和日均估算";
+  const left = hintMs === null ? "" : " → 约 " + formatLeft(hintMs);
+  if (stats.fallback) {
+    return (
+      "今天还没有走完的用量时段，先按 日均 ÷ 3 估算；只在使用时消耗" + left
+    );
+  }
+  return (
+    "今天 " +
+    stats.hours +
+    " 个活跃小时共 " +
+    formatBalance(stats.total, currency) +
+    "，平均 " +
+    formatBalance(stats.perPeriod, currency) +
+    "/时；余额 " +
+    formatBalance(balance, currency) +
+    left +
+    "（只在使用时消耗，当前这一小时不计入）"
+  );
+}
+
+// 设置里可以选常显和显示口径；关着就只在悬停火堆时浮出来
 function applyConfig(cfg) {
   ornament.classList.toggle("hint-on", !!cfg?.hintAlways);
+  hintMode = cfg?.hintMode === "count" ? "count" : "time";
+  if (lastView) renderHint(lastView);
+  else paintHint();
 }
 
 async function poll() {

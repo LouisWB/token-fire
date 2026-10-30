@@ -12,6 +12,30 @@
   overflow: hidden;
 }
 
+/* 窗口高度固定：头部和底部按钮不动，中间的设置项挤在一起时自己滚动 */
+#panel-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1 1 auto;
+  min-height: 0;
+  /* 用负右边距把滚动条顶到面板右侧留白里，内容右边界保持不变：
+     滚动条 4px + 4px 贴边 + 14px 内边距 = 原来 6px + 2px + 14px 的 22px */
+  margin-right: -10px;
+  padding-right: 14px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
+}
+
+#panel-body::-webkit-scrollbar { width: 4px; }
+#panel-body::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+}
+#panel-body::-webkit-scrollbar-track { background: transparent; }
+
 #panel-head {
   display: flex;
   align-items: center;

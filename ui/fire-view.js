@@ -84,21 +84,62 @@ export function dailyCostOf(view) {
   return Math.max(todayCost, average);
 }
 
-// 最近三个有消费时段的平均花费：平台按小时聚合，没有逐次调用记录。
-// 今天还没消费时，用日均 ÷ 3（一天大约三个用量时段）兜底。
-export function costPerPeriodOf(view) {
+// 今天已经走完的活跃小时：个数、总花费、平均每小时花费（共多少花多少，可加、可核对）。
+// 当前这一小时还在累计，算进去会把均价压低、把剩余时间算长，所以排除；
+// 今天还没有走完的活跃小时时，退回 日均 ÷ 3（一天大约三个用量时段）。
+export function periodStatsOf(view) {
   const buckets = Array.isArray(view?.trends?.today) ? view.trends.today : [];
-  const recent = buckets
-    .filter((point) => point && Number(point.value) > 0)
-    .slice(-3);
-  if (recent.length) {
-    const total = recent.reduce((sum, point) => sum + Math.max(0, Number(point.value) || 0), 0);
-    const average = total / recent.length;
-    if (Number.isFinite(average) && average > 0) return average;
+  const currentHour = String(new Date().getHours()).padStart(2, "0") + ":00";
+  let hours = 0;
+  let total = 0;
+  for (const point of buckets) {
+    if (!point) continue;
+    const value = Math.max(0, Number(point.value) || 0);
+    if (value <= 0 || point.label === currentHour) continue;
+    hours += 1;
+    total += value;
   }
+  if (hours > 0) return { hours, total, perPeriod: total / hours, fallback: false };
 
   const daily = dailyCostOf(view);
-  return daily > 0 ? daily / 3 : 0;
+  return { hours: 0, total: 0, perPeriod: daily > 0 ? daily / 3 : 0, fallback: true };
+}
+
+export function costPerPeriodOf(view) {
+  return periodStatsOf(view).perPeriod;
+}
+
+// 每个 token 的均价：把今天各时段的真实花费和 tokens 先汇总再相除（加权，不是平均各时段的单价）。
+// 今天还没数据时退回本周口径，再没有就返回 null。
+export function unitCostOf(view) {
+  const unitOf = (points) => {
+    let cost = 0;
+    let tokens = 0;
+    for (const point of Array.isArray(points) ? points : []) {
+      const value = Math.max(0, Number(point?.value) || 0);
+      const count = Math.max(0, Number(point?.tokens) || 0);
+      if (value > 0 && count > 0) {
+        cost += value;
+        tokens += count;
+      }
+    }
+    return tokens > 0 ? cost / tokens : 0;
+  };
+
+  const todayUnit = unitOf(view?.trends?.today);
+  if (todayUnit > 0) return todayUnit;
+  const weekUnit = unitOf(view?.trends?.week);
+  return weekUnit > 0 ? weekUnit : null;
+}
+
+// 余额还能烧多少 token：余额 ÷ 每 token 均价。
+// 这是官方数据里唯一能直接算出的「剩余量」，不依赖任何外部数据源，
+// 和「剩余时间」不同维度：一个是绝对量，一个是按当前速度外推的时长。
+export function tokensLeftOf(view) {
+  const balance = Number(view?.balance);
+  const unit = unitCostOf(view);
+  if (!Number.isFinite(balance) || !(unit > 0)) return null;
+  return Math.max(0, balance / unit);
 }
 
 // 余额还能烧多久；没有消耗数据时返回 null

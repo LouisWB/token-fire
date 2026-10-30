@@ -14,135 +14,139 @@
         <button id="collapse" title="收起设置">×</button>
       </header>
 
-      <div id="preview">
-        <div id="preview-glow"></div>
-        <svg id="preview-scene" shape-rendering="crispEdges" aria-hidden="true">
-          <g id="preview-static"></g>
-          <g class="frame" data-frame="0"></g>
-          <g class="frame" data-frame="1"></g>
-          <g class="frame" data-frame="2"></g>
-          <g class="frame" data-frame="3"></g>
-          <g id="preview-sparks" class="sparks"></g>
-        </svg>
-        <div id="preview-rate">
-          <b id="rate">--</b>
-        </div>
-      </div>
-
-      <div class="group">
-        <div class="group-head">
-          <h2>DeepSeek 账户</h2>
-          <span id="account-state" class="account-state">未登录</span>
-        </div>
-        <p id="account-detail" class="hint">登录后读取官方用量数据</p>
-        <div class="account-actions">
-          <button id="login" class="primary" type="button">
-            登录 DeepSeek
-          </button>
-          <button id="sync" type="button">刷新</button>
-        </div>
-      </div>
-
-      <div class="group">
-        <div class="group-head">
-          <h2>Token 用量</h2>
-          <span id="balance" class="balance-inline">余额 --</span>
-        </div>
-        <div class="usage-grid">
-          <div>
-            <span>今日</span><b id="today">—</b><i id="today-cost">—</i>
-          </div>
-          <div>
-            <span>昨日</span><b id="yesterday">—</b><i id="yesterday-cost">—</i>
-          </div>
-          <div>
-            <span>本月</span><b id="month">—</b><i id="month-cost">—</i>
+      <div id="panel-body">
+        <div id="preview">
+          <div id="preview-glow"></div>
+          <svg id="preview-scene" shape-rendering="crispEdges" aria-hidden="true">
+            <g id="preview-static"></g>
+            <g class="frame" data-frame="0"></g>
+            <g class="frame" data-frame="1"></g>
+            <g class="frame" data-frame="2"></g>
+            <g class="frame" data-frame="3"></g>
+            <g id="preview-sparks" class="sparks"></g>
+          </svg>
+          <div id="preview-rate">
+            <b id="rate">--</b>
           </div>
         </div>
-        <p id="usage-hint" class="hint">数据约延迟 5 分钟</p>
-      </div>
 
-      <div class="group">
-        <div class="group-head">
-          <h2>消费趋势</h2>
-          <div id="cost-tabs" class="cost-tabs">
-            <button type="button" data-range="today" class="on">本日</button>
-            <button type="button" data-range="week">本周</button>
-            <button type="button" data-range="month">本月</button>
+        <div class="group">
+          <div class="group-head">
+            <h2>DeepSeek 账户</h2>
+            <span id="account-state" class="account-state">未登录</span>
+          </div>
+          <p id="account-detail" class="hint">登录后读取官方用量数据</p>
+          <div class="account-actions">
+            <button id="login" class="primary" type="button">
+              登录 DeepSeek
+            </button>
+            <button id="sync" type="button">刷新</button>
           </div>
         </div>
-        <div class="cost-figure">
-          <b id="cost-total">—</b>
-          <span id="cost-peak"></span>
+
+        <div class="group">
+          <div class="group-head">
+            <h2>Token 用量</h2>
+            <span id="balance" class="balance-inline">余额 --</span>
+          </div>
+          <div class="usage-grid">
+            <div>
+              <span>今日</span><b id="today">—</b><i id="today-cost">—</i>
+            </div>
+            <div>
+              <span>昨日</span><b id="yesterday">—</b><i id="yesterday-cost">—</i>
+            </div>
+            <div>
+              <span>本月</span><b id="month">—</b><i id="month-cost">—</i>
+            </div>
+          </div>
+          <p id="usage-hint" class="hint">数据约延迟 5 分钟</p>
         </div>
-        <div class="cost-chart-wrap">
-          <svg
-            id="cost-chart"
-            viewBox="0 0 270 76"
-            preserveAspectRatio="none"
-            aria-label="消费趋势折线图"
-          ></svg>
-          <div id="cost-tip" class="cost-tip" hidden>
-            <span id="cost-tip-time" class="cost-tip-time"></span>
-            <span class="cost-tip-row"
-              ><em>Token</em><b id="cost-tip-tokens"></b
-            ></span>
-            <span class="cost-tip-row"
-              ><em>消费</em><b id="cost-tip-cost"></b
-            ></span>
+
+        <div class="group">
+          <div class="group-head">
+            <h2>消费趋势</h2>
+            <div id="cost-tabs" class="cost-tabs">
+              <button type="button" data-range="today" class="on">本日</button>
+              <button type="button" data-range="week">本周</button>
+              <button type="button" data-range="month">本月</button>
+            </div>
+          </div>
+          <div class="cost-figure">
+            <b id="cost-total">—</b>
+            <span id="cost-peak"></span>
+          </div>
+          <div class="cost-chart-wrap">
+            <svg
+              id="cost-chart"
+              viewBox="0 0 270 76"
+              preserveAspectRatio="none"
+              aria-label="消费趋势折线图"
+            ></svg>
+            <div id="cost-tip" class="cost-tip" hidden>
+              <span id="cost-tip-time" class="cost-tip-time"></span>
+              <span class="cost-tip-row"
+                ><em>Token</em><b id="cost-tip-tokens"></b
+              ></span>
+              <span class="cost-tip-row"
+                ><em>消费</em><b id="cost-tip-cost"></b
+              ></span>
+            </div>
+          </div>
+          <div class="cost-axis">
+            <span id="cost-axis-start"></span>
+            <span id="cost-axis-mid"></span>
+            <span id="cost-axis-end"></span>
           </div>
         </div>
-        <div class="cost-axis">
-          <span id="cost-axis-start"></span>
-          <span id="cost-axis-mid"></span>
-          <span id="cost-axis-end"></span>
+
+        <div class="group">
+          <h2>摆件大小</h2>
+          <div id="sizes" class="options row"></div>
         </div>
-      </div>
 
-      <div class="group">
-        <h2>摆件大小</h2>
-        <div id="sizes" class="options row"></div>
-      </div>
-
-      <div class="group">
-        <h2>提示</h2>
-        <label class="switch">
-          <input type="checkbox" id="hint-always" />
-          <span class="track"><span class="knob"></span></span>
-          <span class="label">常显剩余时间提示</span>
-        </label>
-      </div>
-
-      <div class="group">
-        <h2>启动</h2>
-        <label class="switch">
-          <input type="checkbox" id="autostart" />
-          <span class="track"><span class="knob"></span></span>
-          <span class="label">开机自启</span>
-        </label>
-      </div>
-
-      <div class="group">
-        <div class="group-head">
-          <h2>同步间隔</h2>
-          <span class="group-note">5 - 3600 秒</span>
+        <div class="group">
+          <h2>提示</h2>
+          <label class="switch">
+            <input type="checkbox" id="hint-always" />
+            <span class="track"><span class="knob"></span></span>
+            <span class="label">常显剩余提示</span>
+          </label>
+          <div id="hint-mode" class="options row"></div>
+          <span class="group-note">「剩余 token」按今天实际的每 token 均价折算</span>
         </div>
-        <label class="field">
-          <input
-            id="sync-interval"
-            type="text"
-            inputmode="numeric"
-            maxlength="4"
-            autocomplete="off"
-            aria-label="DeepSeek 同步间隔（秒）"
-          />
-          <span>秒</span>
-        </label>
-      </div>
 
-      <div class="group">
-        <h2>同步状态</h2>
-        <p id="status" class="hint">准备连接 DeepSeek…</p>
+        <div class="group">
+          <h2>启动</h2>
+          <label class="switch">
+            <input type="checkbox" id="autostart" />
+            <span class="track"><span class="knob"></span></span>
+            <span class="label">开机自启</span>
+          </label>
+        </div>
+
+        <div class="group">
+          <div class="group-head">
+            <h2>同步间隔</h2>
+            <span class="group-note">5 - 3600 秒</span>
+          </div>
+          <label class="field">
+            <input
+              id="sync-interval"
+              type="text"
+              inputmode="numeric"
+              maxlength="4"
+              autocomplete="off"
+              aria-label="DeepSeek 同步间隔（秒）"
+            />
+            <span>秒</span>
+          </label>
+        </div>
+
+        <div class="group">
+          <h2>同步状态</h2>
+          <p id="status" class="hint">准备连接 DeepSeek…</p>
+        </div>
       </div>
 
       <footer>

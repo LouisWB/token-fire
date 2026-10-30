@@ -35,6 +35,7 @@ const els = {
   sizes: document.getElementById("sizes"),
   autostart: document.getElementById("autostart"),
   hintAlways: document.getElementById("hint-always"),
+  hintMode: document.getElementById("hint-mode"),
   syncInterval: document.getElementById("sync-interval"),
   status: document.getElementById("status"),
   head: document.getElementById("panel-head"),
@@ -48,6 +49,11 @@ const SIZE_PRESETS = [
   { key: "large", label: "大" },
 ];
 
+const HINT_MODES = [
+  { key: "time", label: "剩余时间" },
+  { key: "count", label: "剩余 token" },
+];
+
 const COST_RANGES = [
   { key: "today", field: "costToday", trend: "today" },
   { key: "week", field: "costWeek", trend: "week" },
@@ -56,6 +62,8 @@ const COST_RANGES = [
 ];
 
 let size = "medium";
+let hintMode = "time";
+let tokensPerCall = 32000;
 let refreshing = false;
 let lastView = null;
 let costRange = "today";
@@ -96,13 +104,33 @@ function renderSizes() {
   }
 }
 
+function renderHintMode() {
+  els.hintMode.innerHTML = "";
+  for (const mode of HINT_MODES) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.textContent = mode.label;
+    btn.classList.toggle("on", mode.key === hintMode);
+    btn.addEventListener("click", () => {
+      hintMode = mode.key;
+      renderHintMode();
+      saveConfig();
+    });
+    els.hintMode.appendChild(btn);
+  }
+}
+
 function applyConfig(cfg) {
   if (!cfg) return;
   size = SIZE_PRESETS.some((preset) => preset.key === cfg.size) ? cfg.size : "medium";
+  hintMode = HINT_MODES.some((mode) => mode.key === cfg.hintMode) ? cfg.hintMode : "time";
+  const tokens = Number(cfg.tokensPerCall);
+  tokensPerCall = Number.isFinite(tokens) && tokens > 0 ? tokens : 32000;
   els.autostart.checked = !!cfg.autostart;
   els.hintAlways.checked = !!cfg.hintAlways;
   els.syncInterval.value = String(syncSecsOf(cfg.syncIntervalSecs));
   renderSizes();
+  renderHintMode();
 }
 
 // 输入框里只留整数秒，超出范围按边界算
@@ -122,6 +150,8 @@ async function saveConfig() {
       size,
       autostart: els.autostart.checked,
       hintAlways: els.hintAlways.checked,
+      hintMode,
+      tokensPerCall,
       syncIntervalSecs,
     });
     setStatus("ok", "设置已保存");
@@ -573,9 +603,11 @@ async function boot() {
       applyConfig(await invoke("get_config"));
     } catch (err) {
       renderSizes();
+      renderHintMode();
     }
   } else {
     renderSizes();
+    renderHintMode();
     setStatus("warn", "没有 Tauri 环境，看到的只是界面");
   }
 
