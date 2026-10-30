@@ -55,7 +55,7 @@ function tongueSpecs(intensity, rand, liveliness) {
   const heightNoise = 0.10 + 0.16 * live;
 
   // 高矮差拉大：快灭的时候只剩一小撮，烧旺了能顶到画面顶部
-  const height = (6.5 + 21 * it) * (1 + (rand() - 0.5) * heightNoise);
+  const height = (1.5 + 26 * it) * (1 + (rand() - 0.5) * heightNoise);
   const specs = [];
 
   // 主火舌：火苗主体，每帧高度和左右位置都飘一点
@@ -63,24 +63,27 @@ function tongueSpecs(intensity, rand, liveliness) {
     cx: CENTER_X + jitter(1.8),
     tipY: BASE_Y - Math.round(height),
     baseY: BASE_Y,
-    baseW: (5.5 + 7.5 * it) * (1 + (rand() - 0.5) * (0.08 + 0.12 * live)),
+    baseW: (2.5 + 10.5 * it) * (1 + (rand() - 0.5) * (0.08 + 0.12 * live)),
   });
 
-  // 两根副火舌，只长到主火舌一半高，贴着主体形成锯齿顶
-  const side = 3.2 + 2.2 * it;
-  const sideNoise = 0.16 + 0.16 * live;
-  specs.push({
-    cx: CENTER_X - side + jitter(2.2),
-    tipY: BASE_Y - Math.round(height * (0.30 + sideNoise * rand())),
-    baseY: BASE_Y,
-    baseW: 2 + 2.6 * it,
-  });
-  specs.push({
-    cx: CENTER_X + side + jitter(2.2),
-    tipY: BASE_Y - Math.round(height * (0.26 + sideNoise * rand())),
-    baseY: BASE_Y,
-    baseW: 2 + 2.6 * it,
-  });
+  // 两根副火舌，只长到主火舌一半高，贴着主体形成锯齿顶。
+  // 火太小的时候先不长，不然 7 块钱的火苗会像顶了两根刺
+  if (it >= 0.18) {
+    const side = 3.2 + 2.2 * it;
+    const sideNoise = 0.16 + 0.16 * live;
+    specs.push({
+      cx: CENTER_X - side + jitter(2.2),
+      tipY: BASE_Y - Math.round(height * (0.30 + sideNoise * rand())),
+      baseY: BASE_Y,
+      baseW: 1.5 + 3.1 * it,
+    });
+    specs.push({
+      cx: CENTER_X + side + jitter(2.2),
+      tipY: BASE_Y - Math.round(height * (0.26 + sideNoise * rand())),
+      baseY: BASE_Y,
+      baseW: 1.5 + 3.1 * it,
+    });
+  }
 
   return specs;
 }

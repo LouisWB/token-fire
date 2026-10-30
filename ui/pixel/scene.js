@@ -55,13 +55,13 @@ export function buildFlameLayer(intensity, frame, seed, liveliness = 0.5) {
   return grid;
 }
 
-// 强度档位：预览和调试都用这一套，对应默认的 1 - 1000 元对数刻度
+// 强度档位：预览和调试都用这一套，对应默认的 1 - 1000 元线性刻度
 export const LEVELS = [
   { intensity: 0.08, label: "将熄", balance: 1 },
-  { intensity: 0.39, label: "小火", balance: 10 },
-  { intensity: 0.69, label: "中火", balance: 100 },
-  { intensity: 0.84, label: "旺火", balance: 300 },
-  { intensity: 1.0, label: "烈焰", balance: 1000 },
+  { intensity: 0.088, label: "微火", balance: 10 },
+  { intensity: 0.171, label: "小火", balance: 100 },
+  { intensity: 0.355, label: "中火", balance: 300 },
+  { intensity: 1.0, label: "满焰", balance: 1000 },
 ];
 
 // 摆件裁切：上方给火星留空间，底部给余额胶囊留位置

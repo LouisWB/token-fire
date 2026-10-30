@@ -47,13 +47,13 @@ function fireRangeOf(min, max) {
   return { min: low, max: high };
 }
 
-// 余额 → 火势：对数刻度，默认 1 元到 1000 元跨三个数量级，小额和大额都分得清
+// 余额 → 火势：按区间线性映射，7 元在 1 - 1000 里只占 0.6%，火就该接近最小
 function balanceToIntensity(balance, range) {
   const value = Math.max(0, Number(balance) || 0);
   if (!(value > 0)) return 0;
   if (value <= range.min) return MIN_INTENSITY;
   if (value >= range.max) return 1;
-  const t = Math.log(value / range.min) / Math.log(range.max / range.min);
+  const t = (value - range.min) / (range.max - range.min);
   return MIN_INTENSITY + t * (1 - MIN_INTENSITY);
 }
 
@@ -137,7 +137,7 @@ export class FireView {
     this.paint(0, true);
   }
 
-  /* 火势刻度：余额 ≤ min 最小火，≥ max 满焰，中间按对数插值 */
+  /* 火势刻度：余额 ≤ min 最小火，≥ max 满焰，中间按区间线性插值 */
   setScale(min, max) {
     this.range = fireRangeOf(min, max);
     this.applyBalance();

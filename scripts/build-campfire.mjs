@@ -21,7 +21,7 @@ const cards = LEVELS.map((lv, i) => {
       ${svg}
       <figcaption>
         <b>${lv.label}</b>
-        <span>余额 ¥${lv.balance}（对数刻度）</span>
+        <span>余额 ¥${lv.balance}（线性刻度）</span>
         <em>intensity ${lv.intensity.toFixed(2)}</em>
       </figcaption>
     </figure>`;
